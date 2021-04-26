@@ -207,6 +207,7 @@ int set_locate(char *payload)
 void set_led_status(int status)
 {
     mraa_led_context led;
+    mraa_result_t result;
 
     led = mraa_led_init(LED_NUM);
     if (led == NULL) {
@@ -214,7 +215,7 @@ void set_led_status(int status)
         goto exit;
     }
 
-    mraa_result_t result = mraa_led_set_brightness(led, status);
+    result = mraa_led_set_brightness(led, status);
     if (result != MRAA_SUCCESS) {
         printf("Unable to set LED\n");
         goto exit;
@@ -258,7 +259,7 @@ static datainfo_func func_maps[] = {
     {0,          0,            0            },
 };
 
-char *short_options = "i:n:h";
+const char *short_options = "i:n:h";
 struct option long_options[] = {
     {"id",   required_argument, NULL, 'i'},
     {"net",  required_argument, NULL, 'n'},
