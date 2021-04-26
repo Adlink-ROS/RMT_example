@@ -12,5 +12,6 @@ option (BUILDTESTS "Override the addition of tests" OFF)
 add_subdirectory(external/mraa)
 
 include_directories(${PROJECT_SOURCE_DIR}/external/mraa/api)
+include_directories(${CMAKE_SOURCE_DIR}/agent)
 add_executable(agent_example agent_example.c)
 target_link_libraries(agent_example PRIVATE rmt_agent mraa)
