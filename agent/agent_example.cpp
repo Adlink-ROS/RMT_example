@@ -154,6 +154,7 @@ int get_wifi(char *payload)
         char ssid[IW_ESSID_MAX_SIZE + 1];
 
         memset(&wreq, 0, sizeof(struct iwreq));
+        memset(ssid, 0, sizeof(ssid));
         strcpy(wreq.ifr_name, interface);
         if ((sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             ret = -1;
