@@ -19,7 +19,10 @@ def usage():
 
 def worker(inf, id):
     """thread worker function"""
-    subprocess.run(["./agent_example", "--net", inf, "--id", str(id)])
+    if inf:
+        subprocess.run(["./agent_example", "--net", inf, "--id", str(id)])
+    else:
+        subprocess.run(["./agent_example", "--id", str(id)])
     return
 
 def sig_handler(arg1, arg2):

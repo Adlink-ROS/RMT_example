@@ -287,8 +287,10 @@ int main(int argc, char *argv[])
                 myid = atoi(optarg);
                 break;
             case 'n':
-                strcpy(interface, optarg);
-                my_interface = interface;
+                if (strlen(optarg) > 0) {
+                    strcpy(interface, optarg);
+                    my_interface = interface;
+                }
                 break;
             case 'h':
                 print_help();
