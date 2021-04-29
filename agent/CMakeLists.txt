@@ -9,7 +9,7 @@ execute_process(COMMAND git submodule update --init)
 # Disable swig for mraa
 option (BUILDSWIGNODE "Build swig node modules." OFF)
 option (BUILDTESTS "Override the addition of tests" OFF)
-add_subdirectory(external/mraa)
+add_subdirectory(external/mraa EXCLUDE_FROM_ALL)
 
 include_directories(${PROJECT_SOURCE_DIR}/external/mraa/api)
 include_directories(${CMAKE_SOURCE_DIR}/agent)
