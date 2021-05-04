@@ -212,13 +212,13 @@ void set_led_status(int status)
 
     led = mraa_led_init(LED_NUM);
     if (led == NULL) {
-        printf("Unable to init LED\n");
+        perror("Unable to init LED");
         goto exit;
     }
 
     result = mraa_led_set_brightness(led, status);
     if (result != MRAA_SUCCESS) {
-        printf("Unable to set LED\n");
+        perror("Unable to set LED");
         goto exit;
     }
 
