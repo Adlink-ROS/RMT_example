@@ -206,6 +206,8 @@ NMConnection* get_client_nmconnection(const char* uuid, GString* ssid, const cha
                  "RMTClient",
                  NM_SETTING_CONNECTION_TYPE,
                  "802-11-wireless",
+                 NM_SETTING_CONNECTION_AUTOCONNECT_PRIORITY,
+                 NM_SETTING_CONNECTION_AUTOCONNECT_PRIORITY_MAX,
                  NULL);
     nm_connection_add_setting(connection, NM_SETTING(s_con));
 
