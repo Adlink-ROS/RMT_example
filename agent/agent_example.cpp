@@ -190,7 +190,7 @@ int get_wifi(char *payload)
     NMActiveConnection *active_con;
     NMConnection *new_connection;
     const char *   con_id;
-    const char *   password;
+    const char *   password = NULL;
     NMClient  *client;
     GError    *error = NULL;
 
@@ -243,9 +243,11 @@ int get_wifi(char *payload)
 
         device = nm_client_get_device_by_iface(client, interface);
         active_con = nm_device_get_active_connection(device);
-        new_connection = nm_simple_connection_new_clone(NM_CONNECTION(nm_active_connection_get_connection(active_con)));
-        con_id = nm_connection_get_id(new_connection);
-        password = connection_get_password(client, con_id);
+        if (active_con) {
+            new_connection = nm_simple_connection_new_clone(NM_CONNECTION(nm_active_connection_get_connection(active_con)));
+            con_id = nm_connection_get_id(new_connection);
+            password = connection_get_password(client, con_id);
+        }
 
         printf("%s: ssid=%s rssi=%d\n", interface, ssid, rssi);
         if (interface_num != 0) {
