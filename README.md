@@ -5,6 +5,11 @@ The repo contains several components:
 * Web Interface of Neuronbot.
 * RMT Agent.
 
+# Install necessary packages
+```
+sudo apt install libnm-dev libglib2.0-dev
+```
+
 # Build
 
 * Make sure you've already installed rmt_library
