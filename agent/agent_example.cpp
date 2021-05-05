@@ -121,6 +121,63 @@ int set_hostname(char *payload)
     return 0;
 }
 
+typedef struct {
+	GMainLoop *loop;
+	NMConnection *local;
+	const char *setting_name;
+} GetSecretsData;
+
+static void
+secrets_cb (GObject *source_object, GAsyncResult *res, gpointer user_data)
+{
+	NMRemoteConnection *remote = NM_REMOTE_CONNECTION (source_object);
+	GetSecretsData *data = (GetSecretsData*)user_data;
+	GVariant *secrets;
+	GError *error = NULL;
+
+	secrets = nm_remote_connection_get_secrets_finish (remote, res, NULL);
+	if (secrets) {
+		if (!nm_connection_update_secrets (data->local, NULL, secrets, &error) && error) {
+			g_print("Error updating secrets for %s: %s\n",
+			            data->setting_name, error->message);
+			g_clear_error (&error);
+		}
+		g_variant_unref (secrets);
+	}
+
+	g_main_loop_quit (data->loop);
+}
+
+const char*
+connection_get_password(NMClient *client, const char *con_id)
+{
+    NMRemoteConnection *rem_con = NULL;
+    NMConnection *new_connection;
+    NMSettingWirelessSecurity * s_secure;
+    const char *   password;
+    GetSecretsData data = { 0, };
+
+    rem_con = nm_client_get_connection_by_id(client, con_id);
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
+    data.loop = g_main_loop_new (NULL, FALSE);
+    data.local = new_connection;
+    data.setting_name = "802-11-wireless-security";
+
+    nm_remote_connection_get_secrets_async (rem_con,
+		                                    "802-11-wireless-security",
+		                                    NULL,
+		                                    secrets_cb,
+		                                    &data);
+	g_main_loop_run (data.loop);
+
+	g_main_loop_unref(data.loop);
+
+    s_secure = (NMSettingWirelessSecurity *) nm_connection_get_setting_wireless_security(new_connection);
+    password = nm_setting_wireless_security_get_psk(s_secure);
+
+    return password;
+}
+
 int get_wifi(char *payload)
 {
     int ret = 0;
@@ -129,6 +186,20 @@ int get_wifi(char *payload)
     char interface[24];
     int rssi;
     int interface_num = 0;
+    NMDevice *device;
+    NMActiveConnection *active_con;
+    NMConnection *new_connection;
+    const char *   con_id;
+    const char *   password;
+    NMClient  *client;
+    GError    *error = NULL;
+
+    client = nm_client_new(NULL, &error);
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return -1;
+    }
 
     if (!payload) return -1;
 
@@ -170,17 +241,24 @@ int get_wifi(char *payload)
         }
         close(sock_fd);
 
+        device = nm_client_get_device_by_iface(client, interface);
+        active_con = nm_device_get_active_connection(device);
+        new_connection = nm_simple_connection_new_clone(NM_CONNECTION(nm_active_connection_get_connection(active_con)));
+        con_id = nm_connection_get_id(new_connection);
+        password = connection_get_password(client, con_id);
+
         printf("%s: ssid=%s rssi=%d\n", interface, ssid, rssi);
         if (interface_num != 0) {
             sprintf(payload, ",");
         }
-        sprintf(payload, "%s %s %d", interface, ssid, rssi);
+        sprintf(payload, "%s %s %d %s", interface, ssid, rssi, password);
         interface_num++;
     }
     if (interface_num == 0) {
         sprintf(payload, "none");
     }
     fclose(fp);
+    g_object_unref(client);
 
 exit:
     return ret;
