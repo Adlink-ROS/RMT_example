@@ -512,6 +512,16 @@ static datainfo_func func_maps[] = {
     {0,          0,            0            },
 };
 
+int import_testfile(char *file_buf, int file_len) {
+    printf("import test file.\n");
+    return 1234;
+}
+
+static fileinfo_func file_maps[] = {
+    {"testfile", "/tmp", import_testfile, NULL},
+    {0,          0,      0,               0   },
+};
+
 const char *short_options = "i:n:h";
 struct option long_options[] = {
     {"id",   required_argument, NULL, 'i'},
@@ -565,7 +575,7 @@ int main(int argc, char *argv[])
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
     rmt_agent_config(my_interface, myid);
-    rmt_agent_init(func_maps);
+    rmt_agent_init(func_maps, file_maps);
     mraa_init();
 
     if (!nm_client_get_connection_by_id(client, "RMTClient")) {
