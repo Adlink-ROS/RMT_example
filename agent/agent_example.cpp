@@ -189,8 +189,12 @@ int get_wifi(char *payload)
     NMConnection *new_connection;
     const char *   con_id;
     const char *   password = NULL;
-    NMClient  *client;
-    GError    *error = NULL;
+    const char *   ssid;
+    NMClient   *client;
+    GError     *error = NULL;
+    GBytes             *active_ssid;
+    NMRemoteConnection *rem_con = NULL;
+    NMSettingWireless  *s_wireless;
 
     client = nm_client_new(NULL, &error);
     if (!client) {
@@ -219,33 +223,16 @@ int get_wifi(char *payload)
         // get interface and RSSI
         sscanf(buffer, "%[^:]: %*s %*d. %d. %*d %*d %*d %*d %*d %*d %*d\n",
                interface, &rssi);
-        // get SSID
-        int sock_fd;
-        struct iwreq wreq;
-        char ssid[IW_ESSID_MAX_SIZE + 1];
 
-        memset(&wreq, 0, sizeof(struct iwreq));
-        memset(ssid, 0, sizeof(ssid));
-        strcpy(wreq.ifr_name, interface);
-        if ((sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-            ret = -1;
-            goto exit;
-        }
-        wreq.u.essid.pointer = ssid;
-        wreq.u.essid.length = IW_ESSID_MAX_SIZE;
-        if (ioctl(sock_fd, SIOCGIWESSID, &wreq)) {
-            ret = -1;
-            goto exit;
-        }
-        close(sock_fd);
 
-        device = nm_client_get_device_by_iface(client, interface);
-        active_con = nm_device_get_active_connection(device);
-        if (active_con) {
-            new_connection = nm_simple_connection_new_clone(NM_CONNECTION(nm_active_connection_get_connection(active_con)));
-            con_id = nm_connection_get_id(new_connection);
-            password = connection_get_password(client, con_id);
-        }
+        rem_con = nm_client_get_connection_by_id(client, "RMTClient");
+        new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
+        con_id = nm_connection_get_id(new_connection);
+        s_wireless = nm_connection_get_setting_wireless(new_connection);
+        active_ssid = nm_setting_wireless_get_ssid(s_wireless);
+        password = connection_get_password(client, con_id);
+        ssid = nm_utils_ssid_to_utf8((guint8*)g_bytes_get_data(active_ssid, NULL),
+                                     g_bytes_get_size(active_ssid));
 
         printf("%s: ssid=%s rssi=%d\n", interface, ssid, rssi);
         if (interface_num != 0) {
@@ -264,7 +251,7 @@ exit:
     return ret;
 }
 
-NMConnection* get_client_nmconnection(const char* uuid, GString* ssid, const char * password)
+NMConnection* get_client_nmconnection(const char* connection_id, const char* uuid, GString* ssid, const char * password)
 {
     NMConnection *connection = NULL;
     NMSettingConnection *s_con;
@@ -281,7 +268,7 @@ NMConnection* get_client_nmconnection(const char* uuid, GString* ssid, const cha
                  NM_SETTING_CONNECTION_UUID,
                  uuid,
                  NM_SETTING_CONNECTION_ID,
-                 "RMTClient",
+                 connection_id,
                  NM_SETTING_CONNECTION_TYPE,
                  "802-11-wireless",
                  NM_SETTING_CONNECTION_AUTOCONNECT_PRIORITY,
@@ -350,7 +337,7 @@ static void add_wifi_connection(NMClient *client)
     uuid = nm_utils_uuid_generate();
     GString* ssid = g_string_new("RMTserver");
     password = "adlinkros";
-    connection = get_client_nmconnection(uuid, ssid, password);
+    connection = get_client_nmconnection("RMTClient", uuid, ssid, password);
 
     /* Ask the settings service to add the new connection; we'll quit the
      * mainloop and exit when the callback is called.
@@ -398,15 +385,15 @@ static void modify_wifi(const char * ssid, const char * password)
     NMRemoteConnection *rem_con = NULL;
     NMConnection       *connection = NULL;
     const char         *uuid;
+    const char         *con_id = "RMTClient";
     gboolean temporary = FALSE;
 
-    rem_con = nm_client_get_connection_by_id(client, "RMTClient");
-    connection = nm_simple_connection_new();
 
+    rem_con = nm_client_get_connection_by_id(client, con_id);
     GString* g_ssid = g_string_new(ssid);
     uuid = nm_setting_connection_get_uuid(nm_connection_get_setting_connection(NM_CONNECTION (rem_con)));
 
-    connection = get_client_nmconnection(uuid, g_ssid, password);
+    connection = get_client_nmconnection(con_id, uuid, g_ssid, password);
 
     nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
                                                     connection);
