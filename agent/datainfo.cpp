@@ -317,7 +317,6 @@ void add_wifi_connection(NMClient *client)
 {
     NMConnection *connection;
     GMainLoop    *loop;
-    GError       *error = NULL;
     const char   *uuid;
     const char   *password;
 
