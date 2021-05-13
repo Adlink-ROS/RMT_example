@@ -10,6 +10,59 @@
 #include "rmt_agent.h"
 #include "datainfo.hpp"
 #include "fileinfo.hpp"
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <syslog.h>
+
+static void skeleton_daemon()
+{
+    pid_t pid;
+
+    /* Fork off the parent process */
+    pid = fork();
+
+    /* An error occurred */
+    if (pid < 0)
+        exit(EXIT_FAILURE);
+
+    /* Success: Let the parent terminate */
+    if (pid > 0)
+        exit(EXIT_SUCCESS);
+
+    /* On success: The child process becomes session leader */
+    if (setsid() < 0)
+        exit(EXIT_FAILURE);
+
+    /* Catch, ignore and handle signals */
+    /*TODO: Implement a working signal handler */
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+
+    /* Fork off for the second time*/
+    pid = fork();
+
+    /* An error occurred */
+    if (pid < 0)
+        exit(EXIT_FAILURE);
+
+    /* Success: Let the parent terminate */
+    if (pid > 0)
+        exit(EXIT_SUCCESS);
+
+    /* Set new file permissions */
+    umask(0);
+
+    /* Change the working directory to the root directory */
+    /* or another appropriated directory */
+    chdir("/usr/");
+
+    /* Close all open file descriptors */
+    int x;
+    for (x = sysconf(_SC_OPEN_MAX); x >= 0; x--) {
+        close (x);
+    }
+}
 
 static unsigned long myid = 0;
 static char *my_interface = NULL;
@@ -30,10 +83,11 @@ static fileinfo_func file_maps[] = {
 
 const char *short_options = "i:n:h";
 struct option long_options[] = {
-    {"id",   required_argument, NULL, 'i'},
-    {"net",  required_argument, NULL, 'n'},
-    {"help", no_argument,       NULL, 'h'},
-    { 0,     0,                 0,    0  },
+    {"id",     required_argument, NULL, 'i'},
+    {"net",    required_argument, NULL, 'n'},
+    {"daemon", no_argument,       NULL, 'd'},
+    {"help",   no_argument,       NULL, 'h'},
+    { 0,       0,                 0,    0  },
 };
 
 void print_help(void)
@@ -42,20 +96,14 @@ void print_help(void)
     printf("* --help: Showing this messages.\n");
     printf("* --id [myID]: Use myID as the ID.\n");
     printf("* --net [interface]: Decide which interface agent uses.\n");
+    printf("* --daemon: Run RMT agent as daemon.\n");
 }
 
 int main(int argc, char *argv[])
 {
     int cmd_opt = 0;
-    GError *   error = NULL;
-    NMClient * client;
+    bool daemon = false;
 
-    client = nm_client_new(NULL, &error);
-    if (!client) {
-        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
-        g_error_free(error);
-        return 1;
-    }
     // Parse argument
     while ((cmd_opt = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (cmd_opt) {
@@ -68,6 +116,9 @@ int main(int argc, char *argv[])
                     my_interface = interface;
                 }
                 break;
+            case 'd':
+                daemon = true;
+                break;
             case 'h':
                 print_help();
                 return 0;
@@ -77,6 +128,20 @@ int main(int argc, char *argv[])
                 print_help();
                 return 1;
         }
+    }
+
+    if (daemon) {
+        skeleton_daemon();
+    }
+
+    GError *   error = NULL;
+    NMClient * client;
+
+    client = nm_client_new(NULL, &error);
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return 1;
     }
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
