@@ -1,0 +1,12 @@
+[Unit]
+Description=RMT agent auto startup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/agent_example --daemon
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
