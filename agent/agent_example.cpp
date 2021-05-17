@@ -58,8 +58,7 @@ static void skeleton_daemon()
     chdir("/usr/");
 
     /* Close all open file descriptors */
-    int x;
-    for (x = sysconf(_SC_OPEN_MAX); x >= 0; x--) {
+    for (int x = sysconf(_SC_OPEN_MAX); x >= 0; x--) {
         close (x);
     }
 }
