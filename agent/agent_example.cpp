@@ -76,7 +76,7 @@ static datainfo_func func_maps[] = {
 };
 
 static fileinfo_func file_maps[] = {
-    {"testfile", "/tmp", import_testfile, export_testfile},
+    {"custom_callback", "/tmp", import_testfile, export_testfile},
     {0,          0,      0,               0              },
 };
 
