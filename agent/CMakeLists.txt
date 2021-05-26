@@ -25,6 +25,11 @@ target_compile_options( agent_example PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAG
 # copy multi_agents.py to 'build/agent/'
 add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
                   copy "${PROJECT_SOURCE_DIR}/multi_agents.py" "${PROJECT_BINARY_DIR}/multi_agents.py")
+
+# copy neuronbot2_tasks dir to 'build/agent/neuronbot2_tasks'
+add_custom_target(nb2_task_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
+copy_directory "${PROJECT_SOURCE_DIR}/neuronbot2_tasks" "${PROJECT_BINARY_DIR}/neuronbot2_tasks")
+
 install(
   FILES
     ${CMAKE_BINARY_DIR}/agent_example
