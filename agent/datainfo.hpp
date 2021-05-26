@@ -10,6 +10,9 @@ int set_hostname(char *payload);
 int get_wifi(char *payload);
 int set_wifi(char *payload);
 int set_locate(char *payload);
+int get_task_list(char *payload);
+int get_task_mode(char *payload);
+int set_task_mode(char *payload);
 
 void add_wifi_connection(NMClient *client);
 void locate_daemon(void);

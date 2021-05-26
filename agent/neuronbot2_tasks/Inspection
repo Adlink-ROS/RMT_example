@@ -1,0 +1,16 @@
+#!/bin/bash
+trap "exit" INT TERM ERR
+trap "kill 0" EXIT
+
+# source ROS env
+source /home/ros/.bashrc
+
+# source workspace env
+source ~/nb2_foxy_ws/install/setup.bash
+
+# put your ros2 launch commands here, and make sure append '&' symbol in the end of line
+ros2 launch neuronbot2_gazebo neuronbot2_world.launch.py &
+ros2 launch neuronbot2_nav bringup_launch.py use_sim_time:=true open_rviz:=true &
+
+# wait until receive a terminating signal
+wait

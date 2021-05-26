@@ -2,6 +2,11 @@
 #include <linux/wireless.h>
 #include <glib.h>
 #include <NetworkManager.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
 #include "mraa/led.h"
 
 char interface[50];
@@ -477,4 +482,167 @@ void locate_daemon(void)
         led_status = 0;
         set_led_status(led_status);
     }
+}
+
+static const char *RMT_TASK_DIR = "neuronbot2_tasks";
+int get_task_list(char *payload)
+{
+    /* Recognize the tasks by reading the file names */
+
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(RMT_TASK_DIR)) != NULL) {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL) {
+            if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+                // append new task file name
+                strcat(payload, ent->d_name);
+                strcat(payload, " ");
+            }
+        }
+        closedir(dir);
+    } else {
+        /* could not open directory */
+        perror ("");
+        return -1;
+    }
+
+    printf("task_list: %s\n", payload);
+    return 0;
+}
+
+static pid_t g_running_pid = 0; // record the running process id
+static char g_running_task_name[32];
+
+int check_pid_exists(pid_t pid)
+{
+    struct stat sts;
+    char proc_path[32];
+
+    snprintf(proc_path, sizeof(proc_path), "/proc/%d", pid);
+    if (stat(proc_path, &sts) == -1 && errno == ENOENT) {
+        // process doesn't exist, return -1
+        return -1;
+    }
+    return 0;
+}
+
+int get_task_mode(char *payload)
+{
+    /* Check current running task by PID */
+    if (!payload) return -1;
+
+    struct stat sts;
+    char proc_path[32];
+
+    if (g_running_pid == 0) {
+        printf("task_mode: Idle\n");
+        sprintf(payload, "Idle");
+        return 0;
+    }
+
+    if (check_pid_exists(g_running_pid) < 0) {
+        printf("Task '%s' PID=%d not found! Set to idle mode.\n", g_running_task_name, g_running_pid);
+        g_running_pid = 0;
+        snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
+    }
+
+    printf("task_mode: %s\n", g_running_task_name);
+    sprintf(payload, "%s", g_running_task_name);
+
+    return 0;
+}
+
+static int run_task_script(char *filename)
+{
+    if (g_running_pid != 0) {
+        /* There is already a running task, so we kill that */
+        printf("Stop task '%s', PID=%d\n", g_running_task_name, g_running_pid);
+        kill(g_running_pid, SIGTERM); // send a signal to terminate current task
+        g_running_pid = 0;
+        snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
+    }
+
+    /* 
+        RETURN VALUE of fork():
+        On success, the PID of the child process is returned in the parent, 
+        and 0 is returned in the child.  On failure, -1 is returned in the parent, 
+        no child process is created, and errno is set appropriately. 
+    */
+    signal (SIGCHLD,SIG_IGN); // ignore the return value of child process
+    if ((g_running_pid = fork()) < 0) {
+        perror("fork"); // fork error
+    } else if (g_running_pid == 0) {
+        // in the child process, disable child messages output
+        int fd_stdout_bak = dup(1); // backup stdout
+        int fd_stderr_bak = dup(2); // backup stderr
+        int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);        
+        dup2(fd, 1); // redirect stdout to /dev/null
+        dup2(fd, 2); // redirect stderr to /dev/null
+
+        // run external task program
+        char fullpath[128];
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", RMT_TASK_DIR, filename);
+        if (execl(fullpath, filename, (char *) NULL) < 0) {
+            // error to run, enable stdout/stderror to show error reason
+            dup2(fd_stdout_bak, 1); // restore stdout
+            dup2(fd_stderr_bak, 2); // restore stderr
+            perror(filename);       // show execl error
+        }
+        close(fd);
+        exit(0); // child finished
+    }
+
+    // In parent process, check child pid exists, store the child pid in 'g_running_pid' and task name in 'g_running_task_name'
+    sleep(1);
+    if (check_pid_exists(g_running_pid) < 0) {
+        // failure
+        g_running_pid = 0;
+        strncpy(g_running_task_name, "Idle", sizeof(g_running_task_name));
+        printf("Failed to run task '%s'\n", filename);
+    } else {
+        // success
+        strncpy(g_running_task_name, filename, sizeof(g_running_task_name));
+        printf("Task '%s' (PID=%d) is running now.\n", g_running_task_name, g_running_pid);
+    }
+    return 0;   
+}
+
+int set_task_mode(char *payload)
+{
+    /* Ask the robot to run the given task */
+    char fpath[128];
+
+    if (!payload) return -1;
+
+    printf("task_mode to be set: %s\n", payload);
+
+    if (strcmp(payload, g_running_task_name) == 0) {
+        printf("Request is rejected because this task is already running.\n");
+        return 0;
+    } else if (strcmp(payload, "Idle") == 0 && g_running_pid != 0) {
+        printf("Stop the running task due to receive 'Idle' task mode.\n");
+        kill(g_running_pid, SIGTERM); // send a signal to terminate current task
+        g_running_pid = 0;
+        snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
+        return 0;
+    }
+
+    snprintf(fpath, sizeof(fpath), "%s/%s", RMT_TASK_DIR, payload);
+    if (access(fpath, F_OK) != 0) {
+        // task file not found
+        char path[PATH_MAX];
+        getcwd(path, sizeof(path));
+        printf("Task '%s' not found in %s/%s\n", payload, path, RMT_TASK_DIR);
+        return -1;
+    } else if (access(fpath, X_OK) != 0) {
+        // task file not executable
+        printf("Task '%s' not executable! Please add execution permission to the task file.\n", payload);
+        return -1;
+    }
+
+    printf("Ready to run task '%s'\n", payload);
+    run_task_script(payload);
+
+    return 0;
 }
