@@ -28,7 +28,6 @@ add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E
 install(
   FILES
     ${CMAKE_BINARY_DIR}/agent_example
-  PERMISSIONS WORLD_EXECUTE
   DESTINATION 
     usr/bin
 )
@@ -36,8 +35,8 @@ install(
   FILES
     ${CMAKE_SOURCE_DIR}/RMTagent.service
   DESTINATION 
-    etc/systemd/system
-)
+    $ENV{HOME}/.config/systemd/user/
+  )
 
 # Package
 set(CPACK_GENERATOR "DEB")
