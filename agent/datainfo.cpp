@@ -491,13 +491,18 @@ int get_task_list(char *payload)
 
     DIR *dir;
     struct dirent *ent;
+    bool need_delimit = false;
     if ((dir = opendir(RMT_TASK_DIR)) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
             if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+                
+                if (need_delimit)
+                    strcat(payload, " ");
+
                 // append new task file name
                 strcat(payload, ent->d_name);
-                strcat(payload, " ");
+                need_delimit = true;
             }
         }
         closedir(dir);
@@ -611,7 +616,7 @@ static int run_task_script(char *filename)
 int set_task_mode(char *payload)
 {
     /* Ask the robot to run the given task */
-    char fpath[128];
+    char fpath[PATH_MAX];
 
     if (!payload) return -1;
 
@@ -631,9 +636,9 @@ int set_task_mode(char *payload)
     snprintf(fpath, sizeof(fpath), "%s/%s", RMT_TASK_DIR, payload);
     if (access(fpath, F_OK) != 0) {
         // task file not found
-        char path[PATH_MAX];
-        getcwd(path, sizeof(path));
-        printf("Task '%s' not found in %s/%s\n", payload, path, RMT_TASK_DIR);
+        char absolute_path[PATH_MAX];
+        char *ret = getcwd(absolute_path, sizeof(absolute_path));
+        printf("Task '%s' not found in %s/%s\n", payload, absolute_path, RMT_TASK_DIR);
         return -1;
     } else if (access(fpath, X_OK) != 0) {
         // task file not executable
