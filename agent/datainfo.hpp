@@ -15,6 +15,9 @@ int set_locate(char *payload);
 int get_domain_id(char *payload);
 int set_domain_id(char *payload);
 int get_node_list(char *payload);
+int get_task_list(char *payload);
+int get_task_mode(char *payload);
+int set_task_mode(char *payload);
 
 void add_wifi_connection(NMClient *client);
 void locate_daemon(void);

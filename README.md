@@ -27,6 +27,8 @@ git clone https://github.com/Adlink-ROS/RMT_example.git
 cd ~/RMT_example/agent
 cmake -Bbuild -H.
 cmake --build build
+# If you want to build deb file, run the command and find deb file in build folder
+cmake --build build --target package
 ```
 
 * Run
