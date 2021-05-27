@@ -146,7 +146,11 @@ int main(int argc, char *argv[])
     }
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
-    rmt_agent_config(my_interface, myid);
+    rmt_agent_cfg mycfg;
+    mycfg.net_interface = my_interface;
+    mycfg.device_id = myid;
+    mycfg.datainfo_val_size = 256;
+    rmt_agent_configure(&mycfg); 
     rmt_agent_init(func_maps, file_maps);
     mraa_init();
 
