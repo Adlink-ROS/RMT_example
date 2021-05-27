@@ -3,8 +3,14 @@
 #include <glib.h>
 #include <NetworkManager.h>
 #include "mraa/led.h"
+#include <rclcpp/rclcpp.hpp>
+#include <sstream>
+#include <fstream>
+#include <pwd.h>
+#include "yaml-cpp/yaml.h"
 
 char interface[50];
+rclcpp::Node::SharedPtr node;
 
 int get_cpu(char *payload)
 {
@@ -477,4 +483,60 @@ void locate_daemon(void)
         led_status = 0;
         set_led_status(led_status);
     }
+}
+
+int get_node_list(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    auto node_list = node->get_node_graph_interface()->get_node_names_and_namespaces();
+    for (auto & n : node_list) {
+        strcat(payload, n.second.c_str());
+        strcat(payload, n.first.c_str());
+        strcat(payload, " ");
+    }
+
+exit:
+    return ret;
+}
+
+int set_domain_id(char *payload)
+{
+    if (!payload) return -1;
+
+    std::stringstream strValue;
+    unsigned int id_num;
+    strValue << payload;
+    strValue >> id_num;
+
+    if (id_num > 232) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+
+    config["Config"]["default_ros_domain_id"] = id_num;
+    std::ofstream fout(config_dir);
+    fout << config;
+
+    return 0;
+}
+
+int get_domain_id(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+    strcat(payload, config["Config"]["default_ros_domain_id"].as < std::string > ().c_str());
+
+exit:
+    return ret;
 }

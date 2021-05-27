@@ -67,12 +67,14 @@ static unsigned long myid = 0;
 static char *my_interface = NULL;
 
 static datainfo_func func_maps[] = {
-    {"cpu",      get_cpu,      NULL         },
-    {"ram",      get_ram,      NULL         },
-    {"hostname", get_hostname, set_hostname },
-    {"wifi",     get_wifi,     set_wifi     },
-    {"locate",   NULL,         set_locate   },
-    {0,          0,            0            },
+    {"cpu",       get_cpu,       NULL            },
+    {"ram",       get_ram,       NULL            },
+    {"hostname",  get_hostname,  set_hostname    },
+    {"wifi",      get_wifi,      set_wifi        },
+    {"locate",    NULL,          set_locate      },
+    {"node_list", get_node_list, NULL            },
+    {"domain",    get_domain_id, set_domain_id   },
+    {0,           0,             0               },
 };
 
 static fileinfo_func file_maps[] = {
@@ -144,6 +146,8 @@ int main(int argc, char *argv[])
     }
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
+    rclcpp::init(argc, argv);
+    node = std::make_shared < rclcpp::Node > ("list_nodes");
     rmt_agent_config(my_interface, myid);
     rmt_agent_init(func_maps, file_maps);
     mraa_init();
@@ -152,7 +156,7 @@ int main(int argc, char *argv[])
         g_print("Create RMTClient wifi connection\n");
         add_wifi_connection(client);
     }
-    while (1) {
+    while (rclcpp::ok()) {
         rmt_agent_running();
         locate_daemon();
         usleep(10000); // sleep 10ms

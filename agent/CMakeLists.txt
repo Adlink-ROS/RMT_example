@@ -17,9 +17,12 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 
 include_directories(${PROJECT_SOURCE_DIR}/external/mraa/api)
 include_directories(${CMAKE_SOURCE_DIR}/agent)
+include_directories("/opt/ros/foxy/include")
+include_directories(${YAMLCPP_INCLUDE_DIRS})
 add_executable(agent_example agent_example.cpp datainfo.cpp fileinfo.cpp)
 
-target_link_libraries(agent_example PRIVATE rmt_agent mraa ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
+target_link_directories( agent_example PRIVATE "/opt/ros/foxy/lib")
+target_link_libraries( agent_example PRIVATE rmt_agent mraa rclcpp rcutils ${YAMLCPP_LIBRARIES} ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
 target_include_directories( agent_example PRIVATE ${LIBNM_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 target_compile_options( agent_example PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAGS_OTHER})
 # copy multi_agents.py to 'build/agent/'
