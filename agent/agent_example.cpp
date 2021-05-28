@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
     mycfg.net_interface = my_interface;
     mycfg.device_id = myid;
     mycfg.datainfo_val_size = 256;
+    mycfg.domain_id = 0;
     rmt_agent_configure(&mycfg); 
     rmt_agent_init(func_maps, file_maps);
     mraa_init();
