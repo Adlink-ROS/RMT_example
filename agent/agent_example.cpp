@@ -66,7 +66,7 @@ static void skeleton_daemon()
 static unsigned long myid = 0;
 static char *my_interface = NULL;
 
-static datainfo_func func_maps[] = {
+static datainfo_func datainfo_func_maps[] = {
     {"cpu",         get_cpu,        NULL         },
     {"ram",         get_ram,        NULL         },
     {"hostname",    get_hostname,   set_hostname },
@@ -77,7 +77,7 @@ static datainfo_func func_maps[] = {
     {0,             0,              0            },
 };
 
-static fileinfo_func file_maps[] = {
+static fileinfo_func fileinfo_func_maps[] = {
     {"custom_callback", "/tmp", import_testfile, export_testfile},
     {0,                 0,      0,               0              },
 };
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     mycfg.datainfo_val_size = 256;
     mycfg.domain_id = 0;
     rmt_agent_configure(&mycfg); 
-    rmt_agent_init(func_maps, file_maps);
+    rmt_agent_init(datainfo_func_maps, fileinfo_func_maps);
     mraa_init();
 
     if (!nm_client_get_connection_by_id(client, "RMTClient")) {
