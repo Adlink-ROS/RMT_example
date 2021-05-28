@@ -91,6 +91,12 @@ struct option long_options[] = {
     { 0,       0,                 0,    0  },
 };
 
+static void agent_devinfo_func(char *payload)
+{
+    strcpy(payload, "This is extra information from device.");
+    return;
+}
+
 void print_help(void)
 {
     printf("Usage: ./agent_example [options]\n");
@@ -151,8 +157,9 @@ int main(int argc, char *argv[])
     mycfg.device_id = myid;
     mycfg.datainfo_val_size = 256;
     mycfg.domain_id = 0;
+    mycfg.devinfo_size = 1024;
     rmt_agent_configure(&mycfg); 
-    rmt_agent_init(datainfo_func_maps, fileinfo_func_maps);
+    rmt_agent_init(agent_devinfo_func, datainfo_func_maps, fileinfo_func_maps);
     mraa_init();
 
     if (!nm_client_get_connection_by_id(client, "RMTClient")) {
