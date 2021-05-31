@@ -67,16 +67,16 @@ static unsigned long myid = 0;
 static char *my_interface = NULL;
 
 static datainfo_func datainfo_func_maps[] = {
-    {"cpu",         get_cpu,        NULL         },
-    {"ram",         get_ram,        NULL         },
-    {"hostname",    get_hostname,   set_hostname },
-    {"wifi",        get_wifi,       set_wifi     },
-    {"locate",      NULL,           set_locate   },
-    {"task_list",   get_task_list,  NULL         },
-    {"task_mode",   get_task_mode,  set_task_mode},
-    {"node_list",   get_node_list,  NULL         },
-    {"domain_id",   get_domain_id,  set_domain_id},
-    {0,             0,              0            },
+    {"cpu",       get_cpu,       NULL         },
+    {"ram",       get_ram,       NULL         },
+    {"hostname",  get_hostname,  set_hostname },
+    {"wifi",      get_wifi,      set_wifi     },
+    {"locate",    NULL,          set_locate   },
+    {"task_list", get_task_list, NULL         },
+    {"task_mode", get_task_mode, set_task_mode},
+    {"node_list", get_node_list, NULL         },
+    {"domain_id", get_domain_id, set_domain_id},
+    {0,           0,             0            },
 };
 
 static fileinfo_func fileinfo_func_maps[] = {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     mycfg.datainfo_val_size = 256;
     mycfg.domain_id = 0;
     mycfg.devinfo_size = 1024;
-    rmt_agent_configure(&mycfg); 
+    rmt_agent_configure(&mycfg);
     rmt_agent_init(agent_devinfo_func, datainfo_func_maps, fileinfo_func_maps);
     mraa_init();
 
