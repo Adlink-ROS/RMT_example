@@ -74,6 +74,8 @@ static datainfo_func datainfo_func_maps[] = {
     {"locate",      NULL,           set_locate   },
     {"task_list",   get_task_list,  NULL         },
     {"task_mode",   get_task_mode,  set_task_mode},
+    {"node_list",   get_node_list,  NULL         },
+    {"domain_id",   get_domain_id,  set_domain_id},
     {0,             0,              0            },
 };
 
@@ -152,6 +154,8 @@ int main(int argc, char *argv[])
     }
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
+    rclcpp::init(argc, argv);
+    node = std::make_shared < rclcpp::Node > ("list_nodes");
     rmt_agent_cfg mycfg;
     mycfg.net_interface = my_interface;
     mycfg.device_id = myid;
@@ -166,7 +170,7 @@ int main(int argc, char *argv[])
         g_print("Create RMTClient wifi connection\n");
         add_wifi_connection(client);
     }
-    while (1) {
+    while (rclcpp::ok()) {
         rmt_agent_running();
         locate_daemon();
         usleep(10000); // sleep 10ms

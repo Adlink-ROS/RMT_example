@@ -1,4 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 
-sudo systemctl daemon-reload
-sudo systemctl enable RMTagent
+user=$(logname)
+sudo chmod a+x /usr/bin/agent_example
+loginctl enable-linger $user
+
+if pgrep -f '/lib/systemd/systemd --user' > /dev/null
+then
+    echo "loginctl user already enable"
+else
+    sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
+        systemd --user 2>/dev/null;' 2> /dev/null &
+fi
+
+sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
+    systemctl --user daemon-reload;
+    systemctl --user enable RMTagent.service'

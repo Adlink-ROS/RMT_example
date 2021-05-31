@@ -8,8 +8,14 @@
 #include <string.h>
 #include <unistd.h>
 #include "mraa/led.h"
+#include <rclcpp/rclcpp.hpp>
+#include <sstream>
+#include <fstream>
+#include <pwd.h>
+#include "yaml-cpp/yaml.h"
 
 char interface[50];
+rclcpp::Node::SharedPtr node;
 
 int get_cpu(char *payload)
 {
@@ -484,6 +490,62 @@ void locate_daemon(void)
     }
 }
 
+int get_node_list(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    auto node_list = node->get_node_graph_interface()->get_node_names_and_namespaces();
+    for (auto & n : node_list) {
+        strcat(payload, n.second.c_str());
+        strcat(payload, n.first.c_str());
+        strcat(payload, " ");
+    }
+
+exit:
+    return ret;
+}
+
+int get_domain_id(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+    strcat(payload, config["Config"]["default_ros_domain_id"].as < std::string > ().c_str());
+
+exit:
+    return ret;
+}
+
+int set_domain_id(char *payload)
+{
+    if (!payload) return -1;
+
+    std::stringstream strValue;
+    unsigned int id_num;
+    strValue << payload;
+    strValue >> id_num;
+
+    if (id_num > 232) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+
+    config["Config"]["default_ros_domain_id"] = id_num;
+    std::ofstream fout(config_dir);
+    fout << config;
+
+    return 0;
+}
+
 static const char *RMT_TASK_DIR = "neuronbot2_tasks";
 int get_task_list(char *payload)
 {
@@ -522,7 +584,7 @@ int check_pid_exists(pid_t pid)
     char proc_path[32];
 
     snprintf(proc_path, sizeof(proc_path), "/proc/%d", pid);
-    if (stat(proc_path, &sts) == -1 && errno == ENOENT) {
+    if ((stat(proc_path, &sts) == -1) && (errno == ENOENT)) {
         // process doesn't exist, return -1
         return -1;
     }
@@ -565,20 +627,20 @@ static int run_task_script(char *filename)
         snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
     }
 
-    /* 
+    /*
         RETURN VALUE of fork():
-        On success, the PID of the child process is returned in the parent, 
-        and 0 is returned in the child.  On failure, -1 is returned in the parent, 
-        no child process is created, and errno is set appropriately. 
-    */
-    signal (SIGCHLD,SIG_IGN); // ignore the return value of child process
+        On success, the PID of the child process is returned in the parent,
+        and 0 is returned in the child.  On failure, -1 is returned in the parent,
+        no child process is created, and errno is set appropriately.
+     */
+    signal (SIGCHLD, SIG_IGN); // ignore the return value of child process
     if ((g_running_pid = fork()) < 0) {
         perror("fork"); // fork error
     } else if (g_running_pid == 0) {
         // in the child process, disable child messages output
         int fd_stdout_bak = dup(1); // backup stdout
         int fd_stderr_bak = dup(2); // backup stderr
-        int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);        
+        int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);
         dup2(fd, 1); // redirect stdout to /dev/null
         dup2(fd, 2); // redirect stderr to /dev/null
 
@@ -607,7 +669,7 @@ static int run_task_script(char *filename)
         strncpy(g_running_task_name, filename, sizeof(g_running_task_name));
         printf("Task '%s' (PID=%d) is running now.\n", g_running_task_name, g_running_pid);
     }
-    return 0;   
+    return 0;
 }
 
 int set_task_mode(char *payload)
@@ -622,7 +684,7 @@ int set_task_mode(char *payload)
     if (strcmp(payload, g_running_task_name) == 0) {
         printf("Request is rejected because this task is already running.\n");
         return 0;
-    } else if (strcmp(payload, "Idle") == 0 && g_running_pid != 0) {
+    } else if ((strcmp(payload, "Idle") == 0) && (g_running_pid != 0)) {
         printf("Stop the running task due to receive 'Idle' task mode.\n");
         kill(g_running_pid, SIGTERM); // send a signal to terminate current task
         g_running_pid = 0;
