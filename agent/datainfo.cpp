@@ -559,7 +559,7 @@ int get_task_list(char *payload)
     if ((dir = opendir(RMT_TASK_DIR)) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
-            if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+            if ((strcmp(ent->d_name, ".") != 0) && (strcmp(ent->d_name, "..") != 0)) {
                 strcat(payload, " ");           // add delimiter
                 strcat(payload, ent->d_name);   // append new task file name
             }

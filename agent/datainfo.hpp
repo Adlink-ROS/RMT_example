@@ -2,6 +2,8 @@
 #ifndef _DATAINFO_HPP_
 #define _DATAINFO_HPP_
 
+#include <rclcpp/rclcpp.hpp>
+
 extern char interface[50];
 extern rclcpp::Node::SharedPtr node;
 
