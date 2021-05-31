@@ -4,6 +4,9 @@ jobs:
   coding_style:
     runs-on: ubuntu-20.04
     steps:
+      - uses: actions/checkout@v2
+      - name: Install necessary packages
+        run: sudo apt-get install uncrustify
       - name: CodingStyle
         working-directory: ./tools
         run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
