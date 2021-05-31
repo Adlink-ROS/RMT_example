@@ -1,0 +1,9 @@
+name: build-test
+on: [pull_request]
+jobs:
+  coding_style:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: CodingStyle
+        working-directory: ./tools
+        run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
