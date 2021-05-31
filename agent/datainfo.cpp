@@ -550,21 +550,18 @@ static const char *RMT_TASK_DIR = "neuronbot2_tasks";
 int get_task_list(char *payload)
 {
     /* Recognize the tasks by reading the file names */
+    if (!payload) return -1;
+
+    strcat(payload, "Idle"); // Add Idle task for idle mode
 
     DIR *dir;
     struct dirent *ent;
-    bool need_delimit = false;
-
     if ((dir = opendir(RMT_TASK_DIR)) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
-            if ((strcmp(ent->d_name, ".") != 0) && (strcmp(ent->d_name, "..") != 0)) {
-                if (need_delimit)
-                    strcat(payload, " ");
-
-                // append new task file name
-                strcat(payload, ent->d_name);
-                need_delimit = true;
+            if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+                strcat(payload, " ");           // add delimiter
+                strcat(payload, ent->d_name);   // append new task file name
             }
         }
         closedir(dir);

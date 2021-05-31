@@ -14,6 +14,7 @@ add_subdirectory(external/mraa EXCLUDE_FROM_ALL)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBNM REQUIRED libnm)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(YAMLCPP REQUIRED yaml-cpp>=0.5)
 
 include_directories(${PROJECT_SOURCE_DIR}/external/mraa/api)
 include_directories(${CMAKE_SOURCE_DIR}/agent)
