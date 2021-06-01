@@ -2,11 +2,13 @@
 #define _DATAINFO_HPP_
 
 #ifdef SUPPORT_ROS
-#include <rclcpp/rclcpp.hpp>
-extern rclcpp::Node::SharedPtr node;
+ #include <rclcpp/rclcpp.hpp>
 #endif /*SUPPORT_ROS*/
 
 extern char interface[50];
+#ifdef SUPPORT_ROS
+extern rclcpp::Node::SharedPtr node;
+#endif /*SUPPORT_ROS*/
 
 int get_cpu(char *payload);
 int get_ram(char *payload);

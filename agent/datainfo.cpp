@@ -724,4 +724,5 @@ int set_task_mode(char *payload)
 
     return 0;
 }
+
 #endif /*SUPPORT_ROS*/
