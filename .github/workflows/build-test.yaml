@@ -28,4 +28,4 @@ jobs:
         run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
       - name: Build
         working-directory: ./agent
-        run: cmake -Bbuild -H. -DUSE_ROS=off && cmake --build build
+        run: cmake -Bbuild -H. -DUSE_ROS=off -DUSE_NLIB=off && cmake --build build
