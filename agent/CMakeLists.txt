@@ -17,20 +17,31 @@ else()
   set(NLIB "")
 endif()
 
+# Support ROS or not
+option(USE_ROS "Build agent with ROS" ON)
+if(USE_ROS)
+  message("Build agent with ROS")
+  add_definitions(-DSUPPORT_ROS)
+  include_directories("/opt/ros/foxy/include")
+  link_directories("/opt/ros/foxy/lib")
+  set(ROSLIB rclcpp rcutils)
+else()
+  message("Build agent without ROS")
+  set(ROSLIB "")
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBNM REQUIRED libnm)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(YAMLCPP REQUIRED yaml-cpp>=0.5)
 
 include_directories(${CMAKE_SOURCE_DIR}/agent)
-include_directories("/opt/ros/foxy/include")
 include_directories(${YAMLCPP_INCLUDE_DIRS})
 add_executable(agent_example agent_example.cpp datainfo.cpp fileinfo.cpp)
 
-target_link_directories( agent_example PRIVATE "/opt/ros/foxy/lib")
-target_link_libraries( agent_example PRIVATE rmt_agent ${NLIB} rclcpp rcutils ${YAMLCPP_LIBRARIES} ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
-target_include_directories( agent_example PRIVATE ${LIBNM_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
-target_compile_options( agent_example PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAGS_OTHER})
+target_link_libraries(agent_example PRIVATE rmt_agent ${NLIB} ${ROSLIB} ${YAMLCPP_LIBRARIES} ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
+target_include_directories(agent_example PRIVATE ${LIBNM_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
+target_compile_options(agent_example PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAGS_OTHER})
 # copy multi_agents.py to 'build/agent/'
 add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
                   copy "${PROJECT_SOURCE_DIR}/multi_agents.py" "${PROJECT_BINARY_DIR}/multi_agents.py")
