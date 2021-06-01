@@ -6,14 +6,16 @@
 #include <time.h>
 #include <glib.h>
 #include <NetworkManager.h>
-#include "mraa/led.h"
-#include "rmt_agent.h"
-#include "datainfo.hpp"
-#include "fileinfo.hpp"
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
+#ifdef SUPPORT_NLIB
+ #include "mraa.h"
+#endif /*SUPPORT_NLIB*/
+#include "rmt_agent.h"
+#include "datainfo.hpp"
+#include "fileinfo.hpp"
 
 static void skeleton_daemon()
 {
@@ -164,7 +166,9 @@ int main(int argc, char *argv[])
     mycfg.devinfo_size = 1024;
     rmt_agent_configure(&mycfg);
     rmt_agent_init(agent_devinfo_func, datainfo_func_maps, fileinfo_func_maps);
+#ifdef SUPPORT_NLIB
     mraa_init();
+#endif /*SUPPORT_NLIB*/
 
     if (!nm_client_get_connection_by_id(client, "RMTClient")) {
         g_print("Create RMTClient wifi connection\n");
@@ -172,10 +176,14 @@ int main(int argc, char *argv[])
     }
     while (rclcpp::ok()) {
         rmt_agent_running();
+#ifdef SUPPORT_NLIB
         locate_daemon();
+#endif /*SUPPORT_NLIB*/
         usleep(10000); // sleep 10ms
     }
+#ifdef SUPPORT_NLIB
     mraa_deinit();
+#endif /*SUPPORT_NLIB*/
     rmt_agent_deinit();
     return 0;
 }
