@@ -6,8 +6,11 @@ The repo contains several components:
 * RMT Agent.
 
 # Install necessary packages
-```
+
+```bash
 sudo apt install libnm-dev libglib2.0-dev
+# Install necessary package: Neuron Library
+sudo apt install ./packages/*.deb
 ```
 
 # Build
