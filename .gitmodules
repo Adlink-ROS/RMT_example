@@ -1,3 +1,0 @@
-[submodule "agent/external/mraa"]
-	path = agent/external/mraa
-	url = https://github.com/Adlink-ROS/mraa.git
