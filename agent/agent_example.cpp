@@ -74,10 +74,12 @@ static datainfo_func datainfo_func_maps[] = {
     {"hostname",  get_hostname,  set_hostname },
     {"wifi",      get_wifi,      set_wifi     },
     {"locate",    NULL,          set_locate   },
+#ifdef SUPPORT_ROS
     {"task_list", get_task_list, NULL         },
     {"task_mode", get_task_mode, set_task_mode},
     {"node_list", get_node_list, NULL         },
     {"domain_id", get_domain_id, set_domain_id},
+#endif /*SUPPORT_ROS*/
     {0,           0,             0            },
 };
 
@@ -156,8 +158,10 @@ int main(int argc, char *argv[])
     }
 
     printf("This is RMT Agent. id=%lu and network interface=%s\n", myid, my_interface);
+#ifdef SUPPORT_ROS
     rclcpp::init(argc, argv);
     node = std::make_shared < rclcpp::Node > ("list_nodes");
+#endif /*SUPPORT_ROS*/
     rmt_agent_cfg mycfg;
     mycfg.net_interface = my_interface;
     mycfg.device_id = myid;
@@ -174,7 +178,11 @@ int main(int argc, char *argv[])
         g_print("Create RMTClient wifi connection\n");
         add_wifi_connection(client);
     }
+#ifdef SUPPORT_ROS
     while (rclcpp::ok()) {
+#else
+    while (1) {
+#endif /*SUPPORT_NLIB*/
         rmt_agent_running();
 #ifdef SUPPORT_NLIB
         locate_daemon();

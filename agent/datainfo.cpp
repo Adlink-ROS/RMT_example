@@ -7,7 +7,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include <rclcpp/rclcpp.hpp>
+#ifdef SUPPORT_ROS
+ #include <rclcpp/rclcpp.hpp>
+#endif /*SUPPORT_ROS*/
 #include <sstream>
 #include <fstream>
 #include <pwd.h>
@@ -17,7 +19,9 @@
 #include "yaml-cpp/yaml.h"
 
 char interface[50];
+#ifdef SUPPORT_ROS
 rclcpp::Node::SharedPtr node;
+#endif /*SUPPORT_ROS*/
 
 int get_cpu(char *payload)
 {
@@ -499,6 +503,7 @@ void locate_daemon(void)
 
 #endif /*SUPPORT_NLIB*/
 
+#ifdef SUPPORT_ROS
 int get_node_list(char *payload)
 {
     int ret = 0;
@@ -719,3 +724,5 @@ int set_task_mode(char *payload)
 
     return 0;
 }
+
+#endif /*SUPPORT_ROS*/

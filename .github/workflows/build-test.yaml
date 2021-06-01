@@ -1,12 +1,31 @@
 name: build-test
 on: [pull_request]
 jobs:
-  coding_style:
+  build_2004:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Install necessary packages
-        run: sudo apt-get install uncrustify
+        run: sudo apt-get install libcunit1-dev uncrustify libnm-dev libyaml-cpp-dev
+      - name: Install from packages folder
+        run: sudo apt-get install ./packages/*.deb
       - name: CodingStyle
         working-directory: ./tools
         run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
+      - name: Build
+        working-directory: ./agent
+        run: cmake -Bbuild -H. -DUSE_ROS=off && cmake --build build
+  build_1804:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install necessary packages
+        run: sudo apt-get install libcunit1-dev uncrustify libnm-dev libyaml-cpp-dev
+      - name: Install from packages folder
+        run: sudo apt-get install ./packages/*.deb
+      - name: CodingStyle
+        working-directory: ./tools
+        run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
+      - name: Build
+        working-directory: ./agent
+        run: cmake -Bbuild -H. -DUSE_ROS=off -DUSE_NLIB=off && cmake --build build
