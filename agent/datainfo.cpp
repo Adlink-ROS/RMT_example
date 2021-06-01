@@ -7,11 +7,13 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include "mraa/led.h"
 #include <rclcpp/rclcpp.hpp>
 #include <sstream>
 #include <fstream>
 #include <pwd.h>
+#ifdef SUPPORT_NLIB
+ #include "mraa/led.h"
+#endif /*SUPPORT_NLIB*/
 #include "yaml-cpp/yaml.h"
 
 char interface[50];
@@ -429,6 +431,7 @@ int set_locate(char *payload)
 {
     if (!payload) return -1;
 
+#ifdef SUPPORT_NLIB
     if (strcmp(payload, "on") == 0) {
         locate_on = 1;
     } else {
@@ -436,10 +439,14 @@ int set_locate(char *payload)
     }
 
     printf("set LED: %d\n", locate_on);
+#else
+    printf("locate is not supported.");
+#endif /*SUPPORT_NLIB*/
 
     return 0;
 }
 
+#ifdef SUPPORT_NLIB
 /*
  * status=0: dark
  * status=1: bright
@@ -489,6 +496,8 @@ void locate_daemon(void)
         set_led_status(led_status);
     }
 }
+
+#endif /*SUPPORT_NLIB*/
 
 int get_node_list(char *payload)
 {

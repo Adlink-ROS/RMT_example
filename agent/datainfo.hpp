@@ -21,6 +21,8 @@ int get_task_mode(char *payload);
 int set_task_mode(char *payload);
 
 void add_wifi_connection(NMClient *client);
+#ifdef SUPPORT_NLIB
 void locate_daemon(void);
+#endif /*SUPPORT_NLIB*/
 
 #endif /*_DATAINFO_HPP_*/
