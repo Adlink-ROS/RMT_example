@@ -19,12 +19,24 @@ else()
 endif()
 
 # Support ROS or not
+find_program(LSB_RELEASE_EXEC lsb_release)
+execute_process(COMMAND ${LSB_RELEASE_EXEC} -cs
+  OUTPUT_VARIABLE UBUNTU_VERSION
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(UBUNTU_VERSION STREQUAL "bionic")
+  message("OS: Ubuntu 18.04")
+  set(ROS_PATH "/opt/ros/dashing")
+else()
+  message("OS: Ubuntu 20.04")
+  set(ROS_PATH "/opt/ros/foxy")
+endif()
 option(USE_ROS "Build agent with ROS" ON)
 if(USE_ROS)
   message("Build agent with ROS")
   add_definitions(-DSUPPORT_ROS)
-  include_directories("/opt/ros/foxy/include")
-  link_directories("/opt/ros/foxy/lib")
+  include_directories(${ROS_PATH}/include)
+  link_directories(${ROS_PATH}/lib)
   set(ROSLIB rclcpp rcutils)
 else()
   message("Build agent without ROS")
