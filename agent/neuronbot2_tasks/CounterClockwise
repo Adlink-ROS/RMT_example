@@ -1,6 +1,10 @@
-#!/bin/bash
-trap "exit" INT TERM ERR
-trap "kill 0" EXIT
+#!/bin/bash -m
+set +m 
+# In this way (set +m), the background processes will share the same group ID.
+# So, kill this script process will also kill the child processes.
+
+trap 'exit' INT TERM ERR
+trap 'kill -TERM 0' EXIT
 
 # source ROS env
 source /home/ros/.bashrc

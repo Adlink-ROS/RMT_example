@@ -635,7 +635,7 @@ static int run_task_script(char *filename)
 {
     if (g_running_pid != 0) {
         /* There is already a running task, so we kill that */
-        printf("Stop task '%s', PID=%d\n", g_running_task_name, g_running_pid);
+        printf("[%d] Stop task '%s', PID=%d\n", getpid(), g_running_task_name, g_running_pid);
         kill(g_running_pid, SIGTERM); // send a signal to terminate current task
         g_running_pid = 0;
         snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
@@ -647,27 +647,33 @@ static int run_task_script(char *filename)
         and 0 is returned in the child.  On failure, -1 is returned in the parent,
         no child process is created, and errno is set appropriately.
      */
-    signal (SIGCHLD, SIG_IGN); // ignore the return value of child process
+    // #define DISABLE_OUTPUT_MSG
+    signal(SIGCHLD, SIG_IGN); // ignore the return value of child process
     if ((g_running_pid = fork()) < 0) {
         perror("fork"); // fork error
     } else if (g_running_pid == 0) {
+ #ifdef DISABLE_OUTPUT_MSG
         // in the child process, disable child messages output
         int fd_stdout_bak = dup(1); // backup stdout
         int fd_stderr_bak = dup(2); // backup stderr
         int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);
         dup2(fd, 1); // redirect stdout to /dev/null
         dup2(fd, 2); // redirect stderr to /dev/null
-
+ #endif
         // run external task program
         char fullpath[128];
         snprintf(fullpath, sizeof(fullpath), "%s/%s", RMT_TASK_DIR, filename);
         if (execl(fullpath, filename, (char *) NULL) < 0) {
             // error to run, enable stdout/stderror to show error reason
+ #ifdef DISABLE_OUTPUT_MSG
             dup2(fd_stdout_bak, 1); // restore stdout
             dup2(fd_stderr_bak, 2); // restore stderr
+ #endif
             perror(filename);       // show execl error
         }
+ #ifdef DISABLE_OUTPUT_MSG
         close(fd);
+ #endif
         exit(0); // child finished
     }
 
@@ -699,7 +705,7 @@ int set_task_mode(char *payload)
         printf("Request is rejected because this task is already running.\n");
         return 0;
     } else if ((strcmp(payload, "Idle") == 0) && (g_running_pid != 0)) {
-        printf("Stop the running task due to receive 'Idle' task mode.\n");
+        printf("[%d] Stop the running task (%d) due to receive 'Idle' task mode.\n", getpid(), g_running_pid);
         kill(g_running_pid, SIGTERM); // send a signal to terminate current task
         g_running_pid = 0;
         snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
