@@ -643,11 +643,11 @@ static int run_task_script(char *filename)
 
     /*
         RETURN VALUE of fork():
-        On success, the PID of the child process is returned in the parent, 
-        and 0 is returned in the child.  On failure, -1 is returned in the parent, 
-        no child process is created, and errno is set appropriately. 
+        On success, the PID of the child process is returned in the parent,
+        and 0 is returned in the child.  On failure, -1 is returned in the parent,
+        no child process is created, and errno is set appropriately.
      */
-    // #define DISABLE_OUTPUT_MSG   
+    // #define DISABLE_OUTPUT_MSG
     signal(SIGCHLD, SIG_IGN); // ignore the return value of child process
     if ((g_running_pid = fork()) < 0) {
         perror("fork"); // fork error
@@ -665,13 +665,13 @@ static int run_task_script(char *filename)
         snprintf(fullpath, sizeof(fullpath), "%s/%s", RMT_TASK_DIR, filename);
         if (execl(fullpath, filename, (char *) NULL) < 0) {
             // error to run, enable stdout/stderror to show error reason
- #ifdef DISABLE_OUTPUT_MSG            
+ #ifdef DISABLE_OUTPUT_MSG
             dup2(fd_stdout_bak, 1); // restore stdout
             dup2(fd_stderr_bak, 2); // restore stderr
  #endif
             perror(filename);       // show execl error
         }
- #ifdef DISABLE_OUTPUT_MSG        
+ #ifdef DISABLE_OUTPUT_MSG
         close(fd);
  #endif
         exit(0); // child finished
