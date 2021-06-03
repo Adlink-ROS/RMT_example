@@ -704,7 +704,7 @@ int set_task_mode(char *payload)
     if (strcmp(payload, g_running_task_name) == 0) {
         printf("Request is rejected because this task is already running.\n");
         return 0;
-    } else if (strcmp(payload, "Idle") == 0 && g_running_pid != 0) {
+    } else if ((strcmp(payload, "Idle") == 0) && (g_running_pid != 0)) {
         printf("[%d] Stop the running task (%d) due to receive 'Idle' task mode.\n", getpid(), g_running_pid);
         kill(g_running_pid, SIGTERM); // send a signal to terminate current task
         g_running_pid = 0;
