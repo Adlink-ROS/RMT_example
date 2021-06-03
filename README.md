@@ -6,25 +6,32 @@ The repo contains several components:
 * RMT Agent.
 
 # Install necessary packages
-```
+
+```bash
 sudo apt install libnm-dev libglib2.0-dev
+# If you want to use ROS, please also install ROS 2 foxy
 ```
 
 # Build
 
-* Make sure you've already installed rmt_library
-
-* Download
+* Clone the repo
 
 ```bash
 cd ~
 git clone https://github.com/Adlink-ROS/RMT_example.git
 ```
 
-* Build Agent
+* Install necessary packages: Neuron Library, RMT Library
 
 ```bash
 cd ~/RMT_example/agent
+sudo apt install ./packages/*.deb
+```
+
+* Build Agent
+
+```bash
+# If you don't want to use ROS, run "cmake -Bbuild -H. -DUSE_ROS=off" instead
 cmake -Bbuild -H.
 cmake --build build
 # If you want to build deb file, run the command and find deb file in build folder

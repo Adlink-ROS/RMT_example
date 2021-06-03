@@ -7,9 +7,21 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include "mraa/led.h"
+#ifdef SUPPORT_ROS
+ #include <rclcpp/rclcpp.hpp>
+#endif /*SUPPORT_ROS*/
+#include <sstream>
+#include <fstream>
+#include <pwd.h>
+#ifdef SUPPORT_NLIB
+ #include "mraa/led.h"
+#endif /*SUPPORT_NLIB*/
+#include "yaml-cpp/yaml.h"
 
 char interface[50];
+#ifdef SUPPORT_ROS
+rclcpp::Node::SharedPtr node;
+#endif /*SUPPORT_ROS*/
 
 int get_cpu(char *payload)
 {
@@ -423,6 +435,7 @@ int set_locate(char *payload)
 {
     if (!payload) return -1;
 
+#ifdef SUPPORT_NLIB
     if (strcmp(payload, "on") == 0) {
         locate_on = 1;
     } else {
@@ -430,10 +443,14 @@ int set_locate(char *payload)
     }
 
     printf("set LED: %d\n", locate_on);
+#else
+    printf("locate is not supported.");
+#endif /*SUPPORT_NLIB*/
 
     return 0;
 }
 
+#ifdef SUPPORT_NLIB
 /*
  * status=0: dark
  * status=1: bright
@@ -484,6 +501,65 @@ void locate_daemon(void)
     }
 }
 
+#endif /*SUPPORT_NLIB*/
+
+#ifdef SUPPORT_ROS
+int get_node_list(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    auto node_list = node->get_node_graph_interface()->get_node_names_and_namespaces();
+    for (auto & n : node_list) {
+        strcat(payload, n.second.c_str());
+        strcat(payload, n.first.c_str());
+        strcat(payload, " ");
+    }
+
+exit:
+    return ret;
+}
+
+int get_domain_id(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+    strcat(payload, config["Config"]["default_ros_domain_id"].as < std::string > ().c_str());
+
+exit:
+    return ret;
+}
+
+int set_domain_id(char *payload)
+{
+    if (!payload) return -1;
+
+    std::stringstream strValue;
+    unsigned int id_num;
+    strValue << payload;
+    strValue >> id_num;
+
+    if (id_num > 232) return -1;
+
+    struct passwd *pw = getpwuid(getuid());
+    char *config_dir = pw->pw_dir;
+    strcat(config_dir, "/ros_menu/config.yaml");
+    YAML::Node config = YAML::LoadFile(config_dir);
+
+    config["Config"]["default_ros_domain_id"] = id_num;
+    std::ofstream fout(config_dir);
+    fout << config;
+
+    return 0;
+}
+
 static const char *RMT_TASK_DIR = "neuronbot2_tasks";
 int get_task_list(char *payload)
 {
@@ -497,7 +573,7 @@ int get_task_list(char *payload)
     if ((dir = opendir(RMT_TASK_DIR)) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
-            if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+            if ((strcmp(ent->d_name, ".") != 0) && (strcmp(ent->d_name, "..") != 0)) {
                 strcat(payload, " ");           // add delimiter
                 strcat(payload, ent->d_name);   // append new task file name
             }
@@ -522,7 +598,7 @@ int check_pid_exists(pid_t pid)
     char proc_path[32];
 
     snprintf(proc_path, sizeof(proc_path), "/proc/%d", pid);
-    if (stat(proc_path, &sts) == -1 && errno == ENOENT) {
+    if ((stat(proc_path, &sts) == -1) && (errno == ENOENT)) {
         // process doesn't exist, return -1
         return -1;
     }
@@ -565,7 +641,7 @@ static int run_task_script(char *filename)
         snprintf(g_running_task_name, sizeof(g_running_task_name), "Idle");
     }
 
-    /* 
+    /*
         RETURN VALUE of fork():
         On success, the PID of the child process is returned in the parent, 
         and 0 is returned in the child.  On failure, -1 is returned in the parent, 
@@ -580,7 +656,7 @@ static int run_task_script(char *filename)
         // in the child process, disable child messages output
         int fd_stdout_bak = dup(1); // backup stdout
         int fd_stderr_bak = dup(2); // backup stderr
-        int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);        
+        int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);
         dup2(fd, 1); // redirect stdout to /dev/null
         dup2(fd, 2); // redirect stderr to /dev/null
 #endif
@@ -613,7 +689,7 @@ static int run_task_script(char *filename)
         strncpy(g_running_task_name, filename, sizeof(g_running_task_name));
         printf("Task '%s' (PID=%d) is running now.\n", g_running_task_name, g_running_pid);
     }
-    return 0;   
+    return 0;
 }
 
 int set_task_mode(char *payload)
@@ -654,3 +730,5 @@ int set_task_mode(char *payload)
 
     return 0;
 }
+
+#endif /*SUPPORT_ROS*/
