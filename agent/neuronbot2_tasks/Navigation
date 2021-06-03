@@ -1,6 +1,10 @@
-#!/bin/bash
-trap "exit" INT TERM ERR
-trap "kill 0" EXIT
+#!/bin/bash -m
+set +m 
+# In this way (set +m), the background processes will share the same group ID.
+# So, kill this script process will also kill the child processes.
+
+trap 'exit' INT TERM ERR
+trap 'kill -TERM 0' EXIT
 
 # source ROS env
 source /home/ros/.bashrc
@@ -8,7 +12,7 @@ source /home/ros/.bashrc
 # source workspace env
 source ~/neuronbot2_ros2_ws/install/setup.bash
 
-# put your ros2 launch commands here, and make sure append '&' symbol in the end of line
+# put your ros2 commands here, and make sure the '&' symbol is appended in the end of line
 ros2 launch neuronbot2_gazebo neuronbot2_world.launch.py &
 ros2 launch neuronbot2_nav bringup_launch.py use_sim_time:=true open_rviz:=true &
 
