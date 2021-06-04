@@ -503,24 +503,6 @@ void locate_daemon(void)
 
 #endif /*SUPPORT_NLIB*/
 
-#ifdef SUPPORT_ROS
-int get_node_list(char *payload)
-{
-    int ret = 0;
-
-    if (!payload) return -1;
-
-    auto node_list = node->get_node_graph_interface()->get_node_names_and_namespaces();
-    for (auto & n : node_list) {
-        strcat(payload, n.second.c_str());
-        strcat(payload, n.first.c_str());
-        strcat(payload, " ");
-    }
-
-exit:
-    return ret;
-}
-
 int get_domain_id(char *payload)
 {
     int ret = 0;
@@ -559,6 +541,26 @@ int set_domain_id(char *payload)
 
     return 0;
 }
+
+#ifdef SUPPORT_ROS
+int get_node_list(char *payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    auto node_list = node->get_node_graph_interface()->get_node_names_and_namespaces();
+    for (auto & n : node_list) {
+        strcat(payload, n.second.c_str());
+        strcat(payload, n.first.c_str());
+        strcat(payload, " ");
+    }
+
+exit:
+    return ret;
+}
+
+#endif /*SUPPORT_ROS*/
 
 static const char *RMT_TASK_DIR = "neuronbot2_tasks";
 int get_task_list(char *payload)
@@ -730,5 +732,3 @@ int set_task_mode(char *payload)
 
     return 0;
 }
-
-#endif /*SUPPORT_ROS*/
