@@ -654,28 +654,28 @@ static int run_task_script(char *filename)
     if ((g_running_pid = fork()) < 0) {
         perror("fork"); // fork error
     } else if (g_running_pid == 0) {
- #ifdef DISABLE_OUTPUT_MSG
+#ifdef DISABLE_OUTPUT_MSG
         // in the child process, disable child messages output
         int fd_stdout_bak = dup(1); // backup stdout
         int fd_stderr_bak = dup(2); // backup stderr
         int fd = open("/dev/null", O_WRONLY | O_CREAT, 0666);
         dup2(fd, 1); // redirect stdout to /dev/null
         dup2(fd, 2); // redirect stderr to /dev/null
- #endif
+#endif
         // run external task program
         char fullpath[128];
         snprintf(fullpath, sizeof(fullpath), "%s/%s", RMT_TASK_DIR, filename);
         if (execl(fullpath, filename, (char *) NULL) < 0) {
             // error to run, enable stdout/stderror to show error reason
- #ifdef DISABLE_OUTPUT_MSG
+#ifdef DISABLE_OUTPUT_MSG
             dup2(fd_stdout_bak, 1); // restore stdout
             dup2(fd_stderr_bak, 2); // restore stderr
- #endif
+#endif
             perror(filename);       // show execl error
         }
- #ifdef DISABLE_OUTPUT_MSG
+#ifdef DISABLE_OUTPUT_MSG
         close(fd);
- #endif
+#endif
         exit(0); // child finished
     }
 
