@@ -1,4 +1,3 @@
-#include <rclcpp/rclcpp.hpp>
 #ifndef _DATAINFO_HPP_
 #define _DATAINFO_HPP_
 
@@ -19,14 +18,14 @@ int get_wifi(char *payload);
 int set_wifi(char *payload);
 int set_locate(char *payload);
 int set_ip_address(char *payload);
-#ifdef SUPPORT_ROS
 int get_domain_id(char *payload);
 int set_domain_id(char *payload);
+#ifdef SUPPORT_ROS
 int get_node_list(char *payload);
+#endif /*SUPPORT_ROS*/
 int get_task_list(char *payload);
 int get_task_mode(char *payload);
 int set_task_mode(char *payload);
-#endif /*SUPPORT_ROS*/
 
 void add_wifi_connection(NMClient *client);
 #ifdef SUPPORT_NLIB
