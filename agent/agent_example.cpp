@@ -69,18 +69,19 @@ static unsigned long myid = 0;
 static char *my_interface = NULL;
 
 static datainfo_func datainfo_func_maps[] = {
-    {"cpu",       get_cpu,       NULL         },
-    {"ram",       get_ram,       NULL         },
-    {"hostname",  get_hostname,  set_hostname },
-    {"wifi",      get_wifi,      set_wifi     },
-    {"locate",    NULL,          set_locate   },
+    {"cpu",        get_cpu,       NULL           },
+    {"ram",        get_ram,       NULL           },
+    {"hostname",   get_hostname,  set_hostname   },
+    {"wifi",       get_wifi,      set_wifi       },
+    {"locate",     NULL,          set_locate     },
+    {"ip_address", NULL,          set_ip_address },
 #ifdef SUPPORT_ROS
-    {"task_list", get_task_list, NULL         },
-    {"task_mode", get_task_mode, set_task_mode},
-    {"node_list", get_node_list, NULL         },
-    {"domain_id", get_domain_id, set_domain_id},
+    {"task_list",  get_task_list, NULL           },
+    {"task_mode",  get_task_mode, set_task_mode  },
+    {"node_list",  get_node_list, NULL           },
+    {"domain_id",  get_domain_id, set_domain_id  },
 #endif /*SUPPORT_ROS*/
-    {0,           0,             0            },
+    {0,            0,             0              },
 };
 
 static fileinfo_func fileinfo_func_maps[] = {

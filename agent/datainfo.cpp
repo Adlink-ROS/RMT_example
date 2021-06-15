@@ -373,7 +373,7 @@ void modify_connection_cb (GObject *connection, GAsyncResult *result, gpointer u
     g_main_loop_quit((GMainLoop*)user_data);
 }
 
-void modify_wifi(const char * ssid, const char * password)
+int modify_wifi(const char * ssid, const char * password)
 {
     NMClient  *client;
     GMainLoop *loop;
@@ -385,32 +385,52 @@ void modify_wifi(const char * ssid, const char * password)
     if (!client) {
         g_message("Error: Could not connect to NetworkManager: %s.", error->message);
         g_error_free(error);
-        return;
+        return -1;
     }
 
     NMRemoteConnection *rem_con = NULL;
-    NMConnection       *connection = NULL;
-    const char         *uuid;
-    const char         *con_id = "RMTClient";
+    NMConnection       *new_connection;
     gboolean temporary = FALSE;
+    NMSettingWireless   *s_wireless;
+    NMSettingWirelessSecurity * s_secure;
 
-
-    rem_con = nm_client_get_connection_by_id(client, con_id);
+    rem_con = nm_client_get_connection_by_id(client, "RMTClient");
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
     GString* g_ssid = g_string_new(ssid);
-    uuid = nm_setting_connection_get_uuid(nm_connection_get_setting_connection(NM_CONNECTION (rem_con)));
 
-    connection = get_client_nmconnection(con_id, uuid, g_ssid, password);
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_WIRELESS_SECURITY);
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_WIRELESS);
+
+    s_wireless = (NMSettingWireless *) nm_setting_wireless_new();
+
+    g_object_set(G_OBJECT(s_wireless),
+                 NM_SETTING_WIRELESS_SSID,
+                 g_ssid,
+                 NULL);
+    nm_connection_add_setting(new_connection, NM_SETTING(s_wireless));
+
+    s_secure = (NMSettingWirelessSecurity *) nm_setting_wireless_security_new();
+    g_object_set(G_OBJECT(s_secure),
+                 NM_SETTING_WIRELESS_SECURITY_KEY_MGMT,
+                 "wpa-psk",
+                 NM_SETTING_WIRELESS_SECURITY_PSK,
+                 password,
+                 NULL);
+
+    nm_connection_add_setting(new_connection, NM_SETTING(s_secure));
 
     nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
-                                                    connection);
+                                                    new_connection);
     nm_remote_connection_commit_changes_async(rem_con,
                                               !temporary,
                                               NULL,
                                               modify_connection_cb,
                                               loop);
-    g_object_unref(connection);
+    g_object_unref(new_connection);
     g_main_loop_run(loop);
     g_object_unref(client);
+
+    return 0;
 }
 
 /*
@@ -422,11 +442,135 @@ int set_wifi(char *payload)
 
     char ssid[32];
     char password[32];
+    int result;
 
     sscanf(payload, "%s %s", ssid, password);
-    modify_wifi(ssid, password);
+
+    if ((strlen(ssid) < 8) || (strlen(password) < 8)) return -1;
+
+    result = modify_wifi(ssid, password);
+
+    return result;
+}
+
+int update_ip4(const char* method, const char* address, int prefix, const char* gateway)
+{
+    NMClient  *client;
+    GMainLoop *loop;
+    GError    *error = NULL;
+
+    loop = g_main_loop_new(NULL, FALSE);
+    client = nm_client_new(NULL, &error);
+
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return -1;
+    }
+
+    NMRemoteConnection *rem_con = NULL;
+    gboolean temporary = FALSE;
+    NMSettingIPConfig * s_ip4;
+    NMConnection *new_connection;
+    NMIPAddress *ip_address;
+
+    rem_con = nm_client_get_connection_by_id(client, "RMTClient");
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
+    s_ip4 = (NMSettingIPConfig *) nm_setting_ip4_config_new();
+
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_IP4_CONFIG);
+
+    if (!strcmp(method, "auto")) {
+        g_object_set(s_ip4,
+                     NM_SETTING_IP_CONFIG_METHOD,
+                     NM_SETTING_IP4_CONFIG_METHOD_AUTO,
+                     NULL);
+    } else if (!strcmp(method, "manual")) {
+        ip_address = nm_ip_address_new(AF_INET, address, prefix, NULL);
+
+        g_object_set(s_ip4,
+                     NM_SETTING_IP_CONFIG_METHOD,
+                     NM_SETTING_IP4_CONFIG_METHOD_MANUAL,
+                     NULL);
+
+        if (strlen(gateway)) {
+            g_object_set(s_ip4,
+                         NM_SETTING_IP_CONFIG_GATEWAY,
+                         gateway,
+                         NULL);
+        }
+
+        nm_setting_ip_config_add_address(s_ip4, ip_address);
+        nm_ip_address_unref(ip_address);
+    } else {
+        g_print("IP setting method not found\n");
+        g_main_loop_quit((GMainLoop*)loop);
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    nm_connection_add_setting(new_connection, NM_SETTING(s_ip4));
+
+    if (!nm_connection_verify(new_connection, NULL)) {
+        g_print("Error: invalid property of connection, abort action.\n");
+        g_main_loop_quit(loop);
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
+                                                    new_connection);
+    nm_remote_connection_commit_changes_async(rem_con,
+                                              !temporary,
+                                              NULL,
+                                              modify_connection_cb,
+                                              loop);
+    g_object_unref(new_connection);
+    g_main_loop_run(loop);
+    g_object_unref(client);
 
     return 0;
+}
+
+/*
+ * Set RMTClient connection ip address with "<method> <address> <prefix> <gateway>(optional)"
+ * For setting to auto(DHCP), the input should be "auto", input except "method" is unnecessary.
+ * For setting to manual, the input would be like "manual 192.168.50.26 24".
+ */
+int set_ip_address(char *payload)
+{
+    if (!payload) return -1;
+
+    char method[10], address[16], gateway[16];
+    char *temp;
+    int prefix, result;
+
+    strcpy(method, strtok(payload, " "));
+    for (int i = 0; i < 3; i++) {
+        temp = strtok(NULL, " ");
+        if (temp) {
+            switch (i) {
+                case 0:
+                    strcpy(address, temp);
+                    break;
+                case 1:
+                    prefix = atoi(temp);
+                    break;
+                case 2:
+                    strcpy(gateway, temp);
+                    break;
+            }
+        } else {
+            gateway[0] = 0;
+            break;
+        }
+    }
+
+    result = update_ip4(method, address, prefix, gateway);
+
+    return result;
 }
 
 #define LED_NUM 0
