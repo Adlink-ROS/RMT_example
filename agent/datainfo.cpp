@@ -444,7 +444,7 @@ int set_wifi(char *payload)
 
     sscanf(payload, "%s %s", ssid, password);
 
-    if ((strlen(ssid) < 8) || (strlen(password) < 8)) return -1;
+    if (strlen(password) < 8) return -1;
 
     result = modify_wifi(ssid, password);
 
