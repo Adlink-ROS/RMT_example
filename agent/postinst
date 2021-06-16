@@ -12,6 +12,7 @@ else
         systemd --user 2>/dev/null;' 2> /dev/null &
 fi
 
+sudo chown -R $user /home/$user/.config/systemd
 sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
     systemctl --user daemon-reload;
     systemctl --user enable RMTagent.service'
