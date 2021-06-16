@@ -192,11 +192,9 @@ int get_wifi(char *payload)
     char interface[24];
     int rssi;
     int interface_num = 0;
-    NMDevice *device;
-    NMActiveConnection *active_con;
     NMConnection *new_connection;
     const char *   con_id;
-    const char *   password = NULL;
+    const char *   password;
     const char *   ssid;
     NMClient   *client;
     GError     *error = NULL;
@@ -571,6 +569,52 @@ int set_ip_address(char *payload)
     result = update_ip4(method, address, prefix, gateway);
 
     return result;
+}
+
+int get_ip_address(char *payload)
+{
+    NMClient   *client;
+    GError     *error = NULL;
+    NMRemoteConnection *rem_con = NULL;
+    NMSettingIPConfig * s_ip4;
+    NMConnection *new_connection;
+    NMIPAddress *ip_address;
+    const char *address, *gateway, *method;
+    int prefix;
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    client = nm_client_new(NULL, &error);
+
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return -1;
+    }
+
+    rem_con = nm_client_get_connection_by_id(client, "RMTClient");
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
+    s_ip4 = nm_connection_get_setting_ip4_config(new_connection);
+    method = nm_setting_ip_config_get_method(s_ip4);
+
+    if (!strcmp(method, "manual")) {
+        ip_address = nm_setting_ip_config_get_address(s_ip4, 0);
+        prefix = nm_ip_address_get_prefix(ip_address);
+        address = nm_ip_address_get_address(ip_address);
+        gateway = nm_setting_ip_config_get_gateway(s_ip4);
+        sprintf(payload, "%s %s %d", method, address, prefix);
+
+        if (gateway) {
+            strcat(payload, " ");
+            strcat(payload, gateway);
+        }
+    } else {
+        strcat(payload, method);
+    }
+
+exit:
+    return ret;
 }
 
 #define LED_NUM 0
