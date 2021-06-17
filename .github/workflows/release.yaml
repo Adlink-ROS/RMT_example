@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install necessary packages
-        run: sudo apt-get install libcunit1-dev uncrustify libnm-dev libyaml-cpp-dev
+        run: sudo apt-get install libcunit1-dev uncrustify libnm-dev libyaml-cpp-dev makeself
       - name: Install from packages folder
         run: sudo apt-get install ./packages/*.deb
       - name: Build
