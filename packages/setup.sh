@@ -2,12 +2,11 @@
 
 if [ "$1" = "install" ]; then
     echo "Install the RMT agent"
-    sudo apt update
-    sudo apt install -y ./*.deb
+    sudo dpkg -i ./*.deb
 elif [ "$1" = "uninstall" ]; then
     echo "Remove the RMT agent"
-    sudo apt remove rmt_library
-    sudo apt remove rmt_agent
+    sudo dpkg -r rmt_library
+    sudo dpkg -r rmt_agent
 else
     echo "Usage: ./agent_install.sh [command]"
     echo "command:"

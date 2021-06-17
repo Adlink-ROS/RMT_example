@@ -96,5 +96,5 @@ add_custom_target(makeself
     COMMAND rm -rf ${PROJECT_BINARY_DIR}/packages
     COMMAND cp -r ${PROJECT_SOURCE_DIR}/../packages ${PROJECT_BINARY_DIR}
     COMMAND cp ${PROJECT_BINARY_DIR}/*.deb ${PROJECT_BINARY_DIR}/packages
-    COMMAND makeself ${PROJECT_BINARY_DIR}/packages ${CPACK_PACKAGE_FILE_NAME}.run "RMT Agent" ./setup.sh 
+    COMMAND makeself ${PROJECT_BINARY_DIR}/packages ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.run "RMT Agent" ./setup.sh 
     )
