@@ -21,9 +21,11 @@ cd ~
 git clone https://github.com/Adlink-ROS/RMT_example.git
 ```
 
-* Install necessary packages: Neuron Library, RMT Library
+* Install necessary packages
 
 ```bash
+sudo apt install libnm-dev makeself
+# install Neuron Library & RMT Library
 cd ~/RMT_example/agent
 sudo apt install ./packages/*.deb
 ```
@@ -36,6 +38,8 @@ cmake -Bbuild -H.
 cmake --build build
 # If you want to build deb file, run the command and find deb file in build folder
 cmake --build build --target package
+# Create run file (including rmt_library, rmt_agent, mraa)
+cmake --build build --target makeself
 ```
 
 * Run
