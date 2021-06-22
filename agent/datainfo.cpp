@@ -12,6 +12,7 @@
 #endif /*SUPPORT_ROS*/
 #include <sstream>
 #include <fstream>
+#include <iostream>
 #include <pwd.h>
 #ifdef SUPPORT_NLIB
  #include "mraa/led.h"

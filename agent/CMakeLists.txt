@@ -2,9 +2,9 @@
 cmake_minimum_required(VERSION 3.10)
 
 # project name, version
-project(RMT_agent VERSION 0.9.0)
+project(RMT_agent VERSION 0.9.3)
 
-# Check Neuron Library exist or not
+# Check Neuron Library exist or not (default is ON while Neuron Library exists)
 option(USE_NLIB "Build agent with Neuron Library" ON)
 set(nlib_path "/opt/adlink/neuron-sdk/neuron-library")
 if(EXISTS ${nlib_path} AND USE_NLIB)
@@ -18,7 +18,7 @@ else()
   set(NLIB "")
 endif()
 
-# Support ROS or not
+# Support ROS or not (default is OFF)
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(COMMAND ${LSB_RELEASE_EXEC} -cs
   OUTPUT_VARIABLE UBUNTU_VERSION
@@ -31,7 +31,7 @@ else()
   message("OS: Ubuntu 20.04")
   set(ROS_PATH "/opt/ros/foxy")
 endif()
-option(USE_ROS "Build agent with ROS" ON)
+option(USE_ROS "Build agent with ROS" OFF)
 if(USE_ROS)
   message("Build agent with ROS")
   add_definitions(-DSUPPORT_ROS)
@@ -78,7 +78,7 @@ install(
 
 # Package
 set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_NAME "rmt_agent")
 set(CPACK_SET_DESTDIR true)
 set(CPACK_INSTALL_PREFIX "/")
@@ -90,3 +90,11 @@ set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CP
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
     "${CMAKE_CURRENT_SOURCE_DIR}/postinst;${CMAKE_CURRENT_SOURCE_DIR}/postrm")
 include(CPack)
+
+# Create RUN packages
+add_custom_target(makeself
+    COMMAND rm -rf ${PROJECT_BINARY_DIR}/packages
+    COMMAND cp -r ${PROJECT_SOURCE_DIR}/../packages ${PROJECT_BINARY_DIR}
+    COMMAND cp ${PROJECT_BINARY_DIR}/*.deb ${PROJECT_BINARY_DIR}/packages
+    COMMAND makeself ${PROJECT_BINARY_DIR}/packages ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.run "RMT Agent" ./setup.sh 
+    )
