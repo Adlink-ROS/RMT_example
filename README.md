@@ -33,7 +33,7 @@ sudo apt install ./packages/*.deb
 * Build Agent
 
 ```bash
-# If you don't want to use ROS, run "cmake -Bbuild -H. -DUSE_ROS=off" instead
+# If you want to use ROS, run "cmake -Bbuild -H. -DUSE_ROS=ON" instead
 cmake -Bbuild -H.
 cmake --build build
 # If you want to build deb file, run the command and find deb file in build folder

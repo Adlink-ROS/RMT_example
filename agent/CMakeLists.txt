@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 # project name, version
 project(RMT_agent VERSION 0.9.3)
 
-# Check Neuron Library exist or not
+# Check Neuron Library exist or not (default is ON while Neuron Library exists)
 option(USE_NLIB "Build agent with Neuron Library" ON)
 set(nlib_path "/opt/adlink/neuron-sdk/neuron-library")
 if(EXISTS ${nlib_path} AND USE_NLIB)
@@ -18,7 +18,7 @@ else()
   set(NLIB "")
 endif()
 
-# Support ROS or not
+# Support ROS or not (default is OFF)
 find_program(LSB_RELEASE_EXEC lsb_release)
 execute_process(COMMAND ${LSB_RELEASE_EXEC} -cs
   OUTPUT_VARIABLE UBUNTU_VERSION
@@ -31,7 +31,7 @@ else()
   message("OS: Ubuntu 20.04")
   set(ROS_PATH "/opt/ros/foxy")
 endif()
-option(USE_ROS "Build agent with ROS" ON)
+option(USE_ROS "Build agent with ROS" OFF)
 if(USE_ROS)
   message("Build agent with ROS")
   add_definitions(-DSUPPORT_ROS)

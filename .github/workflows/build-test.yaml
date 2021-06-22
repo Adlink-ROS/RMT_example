@@ -14,7 +14,7 @@ jobs:
         run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
       - name: Build
         working-directory: ./agent
-        run: cmake -Bbuild -H. -DUSE_ROS=off && cmake --build build
+        run: cmake -Bbuild -H. -DUSE_ROS=OFF && cmake --build build
   build_1804:
     runs-on: ubuntu-18.04
     steps:
@@ -28,4 +28,4 @@ jobs:
         run: ./uncrustify.sh ../agent/*.cpp ../agent/*.hpp
       - name: Build
         working-directory: ./agent
-        run: cmake -Bbuild -H. -DUSE_ROS=off -DUSE_NLIB=off && cmake --build build
+        run: cmake -Bbuild -H. -DUSE_ROS=OFF -DUSE_NLIB=OFF && cmake --build build

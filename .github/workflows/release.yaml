@@ -15,7 +15,7 @@ jobs:
         run: sudo apt-get install ./packages/*.deb
       - name: Build
         working-directory: ./agent
-        run: cmake -Bbuild -H. -DUSE_ROS=off && cmake --build build
+        run: cmake -Bbuild -H. -DUSE_ROS=OFF && cmake --build build
       - name: Packages
         working-directory: ./agent
         run: cmake --build build --target package && cmake --build build --target makeself
