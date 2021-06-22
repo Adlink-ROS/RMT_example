@@ -9,4 +9,4 @@ ExecStart=/usr/bin/bash -c 'source $HOME/ros_menu/ros_bashrc <<< 2;/usr/bin/agen
 RemainAfterExit=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
