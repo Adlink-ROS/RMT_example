@@ -147,6 +147,11 @@ typedef struct {
     const char *setting_name;
 } GetSecretsData;
 
+typedef struct {
+    GMainLoop *loop;
+    int result;
+} WifiModifyData;
+
 void secrets_cb (GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
     NMRemoteConnection *remote = NM_REMOTE_CONNECTION (source_object);
@@ -369,18 +374,22 @@ void add_wifi_connection(NMClient *client)
 void modify_connection_cb (GObject *connection, GAsyncResult *result, gpointer user_data)
 {
     GError *error = NULL;
+    WifiModifyData *data = (WifiModifyData*)user_data;
 
     if (!nm_remote_connection_commit_changes_finish (NM_REMOTE_CONNECTION (connection),
                                                      result, &error)) {
-        printf(("Error: Failed to modify connection '%s': %s"),
-               nm_connection_get_id (NM_CONNECTION (connection)),
-               error->message);
+        g_print(("Error: Failed to modify connection '%s': %s\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                error->message);
+        g_error_free(error);
+        data->result = -1;
     } else {
-        printf(("Connection '%s' (%s) successfully modified.\n"),
-               nm_connection_get_id (NM_CONNECTION (connection)),
-               nm_connection_get_uuid (NM_CONNECTION (connection)));
+        g_print(("Connection '%s' (%s) successfully modified.\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                nm_connection_get_uuid (NM_CONNECTION (connection)));
+        data->result = 0;
     }
-    g_main_loop_quit((GMainLoop*)user_data);
+    g_main_loop_quit(data->loop);
 }
 
 int modify_wifi(const char * ssid, const char * password)
@@ -388,6 +397,7 @@ int modify_wifi(const char * ssid, const char * password)
     NMClient  *client;
     GMainLoop *loop;
     GError    *error = NULL;
+    WifiModifyData *wifi_modify_data;
 
     loop = g_main_loop_new(NULL, FALSE);
     client = nm_client_new(NULL, &error);
@@ -397,6 +407,11 @@ int modify_wifi(const char * ssid, const char * password)
         g_error_free(error);
         return -1;
     }
+
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .loop = loop,
+    };
 
     NMRemoteConnection *rem_con = NULL;
     NMConnection       *new_connection;
@@ -435,12 +450,12 @@ int modify_wifi(const char * ssid, const char * password)
                                               !temporary,
                                               NULL,
                                               modify_connection_cb,
-                                              loop);
+                                              wifi_modify_data);
     g_object_unref(new_connection);
-    g_main_loop_run(loop);
+    g_main_loop_run(wifi_modify_data->loop);
     g_object_unref(client);
 
-    return 0;
+    return wifi_modify_data->result;
 }
 
 /*
@@ -456,8 +471,6 @@ int set_wifi(char *payload)
 
     sscanf(payload, "%s %s", ssid, password);
 
-    if (strlen(password) < 8) return -1;
-
     result = modify_wifi(ssid, password);
 
     return result;
@@ -468,6 +481,7 @@ int update_ip4(const char* method, const char* address, int prefix, const char* 
     NMClient  *client;
     GMainLoop *loop;
     GError    *error = NULL;
+    WifiModifyData *wifi_modify_data;
 
     loop = g_main_loop_new(NULL, FALSE);
     client = nm_client_new(NULL, &error);
@@ -477,6 +491,11 @@ int update_ip4(const char* method, const char* address, int prefix, const char* 
         g_error_free(error);
         return -1;
     }
+
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .loop = loop,
+    };
 
     NMRemoteConnection *rem_con = NULL;
     gboolean temporary = FALSE;
@@ -514,7 +533,7 @@ int update_ip4(const char* method, const char* address, int prefix, const char* 
         nm_ip_address_unref(ip_address);
     } else {
         g_print("IP setting method not found\n");
-        g_main_loop_quit((GMainLoop*)loop);
+        g_main_loop_quit(wifi_modify_data->loop);
         g_object_unref(client);
 
         return -1;
@@ -524,7 +543,7 @@ int update_ip4(const char* method, const char* address, int prefix, const char* 
 
     if (!nm_connection_verify(new_connection, NULL)) {
         g_print("Error: invalid property of connection, abort action.\n");
-        g_main_loop_quit(loop);
+        g_main_loop_quit(wifi_modify_data->loop);
         g_object_unref(client);
 
         return -1;
@@ -536,12 +555,12 @@ int update_ip4(const char* method, const char* address, int prefix, const char* 
                                               !temporary,
                                               NULL,
                                               modify_connection_cb,
-                                              loop);
+                                              wifi_modify_data);
     g_object_unref(new_connection);
-    g_main_loop_run(loop);
+    g_main_loop_run(wifi_modify_data->loop);
     g_object_unref(client);
 
-    return 0;
+    return wifi_modify_data->result;
 }
 
 /*
