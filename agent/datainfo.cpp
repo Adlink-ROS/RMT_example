@@ -148,6 +148,11 @@ typedef struct {
     const char *setting_name;
 } GetSecretsData;
 
+typedef struct {
+    GMainLoop *loop;
+    int result;
+} WifiModifyData;
+
 void secrets_cb (GObject *source_object, GAsyncResult *res, gpointer user_data)
 {
     NMRemoteConnection *remote = NM_REMOTE_CONNECTION (source_object);
@@ -205,11 +210,9 @@ int get_wifi(char *payload)
     char interface[24];
     int rssi;
     int interface_num = 0;
-    NMDevice *device;
-    NMActiveConnection *active_con;
     NMConnection *new_connection;
     const char *   con_id;
-    const char *   password = NULL;
+    const char *   password;
     const char *   ssid;
     NMClient   *client;
     GError     *error = NULL;
@@ -372,25 +375,30 @@ void add_wifi_connection(NMClient *client)
 void modify_connection_cb (GObject *connection, GAsyncResult *result, gpointer user_data)
 {
     GError *error = NULL;
+    WifiModifyData *data = (WifiModifyData*)user_data;
 
     if (!nm_remote_connection_commit_changes_finish (NM_REMOTE_CONNECTION (connection),
                                                      result, &error)) {
-        printf(("Error: Failed to modify connection '%s': %s"),
-               nm_connection_get_id (NM_CONNECTION (connection)),
-               error->message);
+        g_print(("Error: Failed to modify connection '%s': %s\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                error->message);
+        g_error_free(error);
+        data->result = -1;
     } else {
-        printf(("Connection '%s' (%s) successfully modified.\n"),
-               nm_connection_get_id (NM_CONNECTION (connection)),
-               nm_connection_get_uuid (NM_CONNECTION (connection)));
+        g_print(("Connection '%s' (%s) successfully modified.\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                nm_connection_get_uuid (NM_CONNECTION (connection)));
+        data->result = 0;
     }
-    g_main_loop_quit((GMainLoop*)user_data);
+    g_main_loop_quit(data->loop);
 }
 
-void modify_wifi(const char * ssid, const char * password)
+int modify_wifi(const char * ssid, const char * password)
 {
     NMClient  *client;
     GMainLoop *loop;
     GError    *error = NULL;
+    WifiModifyData *wifi_modify_data;
 
     loop = g_main_loop_new(NULL, FALSE);
     client = nm_client_new(NULL, &error);
@@ -398,32 +406,57 @@ void modify_wifi(const char * ssid, const char * password)
     if (!client) {
         g_message("Error: Could not connect to NetworkManager: %s.", error->message);
         g_error_free(error);
-        return;
+        return -1;
     }
 
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .loop = loop,
+    };
+
     NMRemoteConnection *rem_con = NULL;
-    NMConnection       *connection = NULL;
-    const char         *uuid;
-    const char         *con_id = "RMTClient";
+    NMConnection       *new_connection;
     gboolean temporary = FALSE;
+    NMSettingWireless   *s_wireless;
+    NMSettingWirelessSecurity * s_secure;
 
-
-    rem_con = nm_client_get_connection_by_id(client, con_id);
+    rem_con = nm_client_get_connection_by_id(client, "RMTClient");
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
     GString* g_ssid = g_string_new(ssid);
-    uuid = nm_setting_connection_get_uuid(nm_connection_get_setting_connection(NM_CONNECTION (rem_con)));
 
-    connection = get_client_nmconnection(con_id, uuid, g_ssid, password);
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_WIRELESS_SECURITY);
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_WIRELESS);
+
+    s_wireless = (NMSettingWireless *) nm_setting_wireless_new();
+
+    g_object_set(G_OBJECT(s_wireless),
+                 NM_SETTING_WIRELESS_SSID,
+                 g_ssid,
+                 NULL);
+    nm_connection_add_setting(new_connection, NM_SETTING(s_wireless));
+
+    s_secure = (NMSettingWirelessSecurity *) nm_setting_wireless_security_new();
+    g_object_set(G_OBJECT(s_secure),
+                 NM_SETTING_WIRELESS_SECURITY_KEY_MGMT,
+                 "wpa-psk",
+                 NM_SETTING_WIRELESS_SECURITY_PSK,
+                 password,
+                 NULL);
+
+    nm_connection_add_setting(new_connection, NM_SETTING(s_secure));
 
     nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
-                                                    connection);
+                                                    new_connection);
     nm_remote_connection_commit_changes_async(rem_con,
                                               !temporary,
                                               NULL,
                                               modify_connection_cb,
-                                              loop);
-    g_object_unref(connection);
-    g_main_loop_run(loop);
+                                              wifi_modify_data);
+    g_object_unref(new_connection);
+    g_main_loop_run(wifi_modify_data->loop);
     g_object_unref(client);
+
+    return wifi_modify_data->result;
 }
 
 /*
@@ -435,11 +468,12 @@ int set_wifi(char *payload)
 
     char ssid[32];
     char password[32];
+    int result;
 
     sscanf(payload, "%s %s", ssid, password);
-    modify_wifi(ssid, password);
+    result = modify_wifi(ssid, password);
 
-    return 0;
+    return result;
 }
 
 #define LED_NUM 0
