@@ -1,10 +1,6 @@
 #!/bin/bash
 
 user=$(logname)
-sudo chmod a+x /usr/bin/agent_example
-loginctl enable-linger $user
-mkdir /home/$user/.config/systemd/user -p
-cp /usr/bin/RMTagent.service /home/$user/.config/systemd/user
 
 if pgrep -f '/lib/systemd/systemd --user' > /dev/null
 then
@@ -14,7 +10,7 @@ else
         systemd --user 2>/dev/null;' 2> /dev/null &
 fi
 
-sudo chown -R $user /home/$user/.config/systemd
 sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
-    systemctl --user daemon-reload;
-    systemctl --user enable RMTagent.service'
+    systemctl --user disable RMTagent.service;
+    rm $HOME/.config/systemd/user/RMTagent.service;
+    systemctl --user daemon-reload'
