@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=idle
-ExecStart=/usr/bin/bash -c 'source $HOME/ros_menu/ros_bashrc <<< 2;/usr/bin/agent_example --daemon'
+ExecStart=/usr/bin/bash -c 'source $HOME/ros_menu/ros_bashrc <<< 2;/usr/bin/agent_example'
 RemainAfterExit=yes
 
 [Install]
