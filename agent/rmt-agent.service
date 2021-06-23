@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=idle
-ExecStart=/bin/bash -c 'source $HOME/ros_menu/ros_bashrc <<< 2;/opt/adlink/rmt/agent_example'
+ExecStart=/bin/bash -c 'source $HOME/ros_menu/ros_bashrc <<< 2;/opt/adlink/rmt/rmt-agent'
 RemainAfterExit=yes
 
 [Install]

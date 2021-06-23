@@ -11,7 +11,7 @@ else
 fi
 
 sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
-    systemctl --user disable RMTagent.service;
-    rm $HOME/.config/systemd/user/RMTagent.service;
+    systemctl --user disable rmt-agent.service;
+    rm $HOME/.config/systemd/user/rmt-agent.service;
     systemctl --user daemon-reload;
     systemctl --user reset-failed'

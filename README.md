@@ -46,5 +46,5 @@ cmake --build build --target makeself
 
 ```bash
 cd ~/RMT_example/agent/build
-sudo ./agent_example --id <your_id>
+sudo ./agent-example --id <your_id>
 ```
