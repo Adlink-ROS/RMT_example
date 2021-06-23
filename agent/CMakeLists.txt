@@ -63,17 +63,24 @@ add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E
 add_custom_target(nb2_task_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
 copy_directory "${PROJECT_SOURCE_DIR}/neuronbot2_tasks" "${PROJECT_BINARY_DIR}/neuronbot2_tasks")
 
+set(INSTALL_PATH "/opt/adlink/rmt/")
 install(
   FILES
     ${CMAKE_BINARY_DIR}/agent_example
   DESTINATION 
-    usr/bin
+    ${INSTALL_PATH}
 )
 install(
   FILES
     ${CMAKE_SOURCE_DIR}/RMTagent.service
   DESTINATION 
-    usr/bin
+    ${INSTALL_PATH}
+)
+install(
+  DIRECTORY
+    ${CMAKE_SOURCE_DIR}/tasks
+  DESTINATION
+    ${INSTALL_PATH}
 )
 
 # Package

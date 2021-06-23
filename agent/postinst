@@ -1,10 +1,12 @@
 #!/bin/bash
 
+install_path="/opt/adlink/rmt"
 user=$(logname)
-sudo chmod a+x /usr/bin/agent_example
+sudo chmod a+x ${install_path}/agent_example
+sudo chmod a+x ${install_path}/tasks/*
 loginctl enable-linger $user
 mkdir /home/$user/.config/systemd/user -p
-cp /usr/bin/RMTagent.service /home/$user/.config/systemd/user
+cp ${install_path}/RMTagent.service /home/$user/.config/systemd/user
 
 if pgrep -f '/lib/systemd/systemd --user' > /dev/null
 then
