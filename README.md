@@ -1,6 +1,7 @@
 # Introduction
 
 rmt-agent can run on ROScube and be controlled by RMT library.
+
 rmt-agent is also an example of how to use RMT library.
 
 # Install necessary packages
@@ -46,4 +47,19 @@ cmake --build build --target makeself
 ```bash
 cd ~/rmt-agent/agent/build
 sudo ./rmt-agent --id <your_id>
+```
+
+# Usage
+
+* After packaging, we can install with the following commands
+
+```bash
+./build/rmt_agent_<version>_<arch>.run install
+```
+
+* Enable / Disable rmt-agent
+
+```bash
+systemctl --user enable rmt-agent.service
+systemctl --user disable rmt-agent.service
 ```
