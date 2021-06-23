@@ -1,0 +1,20 @@
+#!/bin/bash -m
+set +m 
+# In this way (set +m), the background processes will share the same group ID.
+# So, kill this script process will also kill the child processes.
+
+trap 'exit' INT TERM ERR
+trap 'kill -TERM 0' EXIT
+
+# Workaround for other shell, like zsh
+# We should make sure ros_menu use the same shell as this shell script.
+SHELL=bash
+
+# source ROS env
+source $HOME/ros_menu/ros_bashrc <<< 2
+
+# put your ros2 commands here, and make sure the '&' symbol is appended in the end of line
+ros2 launch demo_nodes_cpp talker_listener.launch.py &
+
+# wait until receive a terminating signal
+wait

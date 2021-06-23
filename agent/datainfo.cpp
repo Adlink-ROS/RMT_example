@@ -609,7 +609,7 @@ exit:
 
 #endif /*SUPPORT_ROS*/
 
-static const char *RMT_TASK_DIR = "neuronbot2_tasks";
+static const char *RMT_TASK_DIR = "/opt/adlink/rmt/tasks/";
 int get_task_list(char *payload)
 {
     /* Recognize the tasks by reading the file names */
