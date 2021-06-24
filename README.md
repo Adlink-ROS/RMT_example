@@ -1,9 +1,8 @@
-# introduction
+# Introduction
 
-The repo contains several components:
+rmt-agent can run on ROScube and be controlled by RMT library.
 
-* Web Interface of Neuronbot.
-* RMT Agent.
+rmt-agent is also an example of how to use RMT library.
 
 # Install necessary packages
 
@@ -18,7 +17,8 @@ sudo apt install libnm-dev libglib2.0-dev
 
 ```bash
 cd ~
-git clone https://github.com/Adlink-ROS/RMT_example.git
+git clone https://github.com/Adlink-ROS/rmt-agent.git
+cd ~/rmt-agent
 ```
 
 * Install necessary packages
@@ -45,6 +45,21 @@ cmake --build build --target makeself
 * Run
 
 ```bash
-cd ~/RMT_example/agent/build
-sudo ./agent_example --id <your_id>
+cd ~/rmt-agent/agent/build
+sudo ./rmt-agent --id <your_id>
+```
+
+# Usage
+
+* After packaging, we can install with the following commands
+
+```bash
+./build/rmt_agent_<version>_<arch>.run install
+```
+
+* Enable / Disable rmt-agent
+
+```bash
+systemctl --user enable rmt-agent.service
+systemctl --user disable rmt-agent.service
 ```

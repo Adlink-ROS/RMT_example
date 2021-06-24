@@ -106,7 +106,7 @@ static void agent_devinfo_func(char *payload)
 
 void print_help(void)
 {
-    printf("Usage: ./agent_example [options]\n");
+    printf("Usage: ./rmt-agent [options]\n");
     printf("* --help: Showing this messages.\n");
     printf("* --id [myID]: Use myID as the ID.\n");
     printf("* --net [interface]: Decide which interface agent uses.\n");

@@ -1,10 +1,12 @@
 #!/bin/bash
 
+install_path="/opt/adlink/rmt"
 user=$(logname)
-sudo chmod a+x /usr/bin/agent_example
+sudo chmod a+x ${install_path}/rmt-agent
+sudo chmod a+x ${install_path}/tasks/*
 loginctl enable-linger $user
 mkdir /home/$user/.config/systemd/user -p
-cp /usr/bin/RMTagent.service /home/$user/.config/systemd/user
+cp ${install_path}/rmt-agent.service /home/$user/.config/systemd/user
 
 if pgrep -f '/lib/systemd/systemd --user' > /dev/null
 then
@@ -17,4 +19,4 @@ fi
 sudo chown -R $user /home/$user/.config/systemd
 sudo -H -u $user bash -c 'export XDG_RUNTIME_DIR=/run/user/$UID;
     systemctl --user daemon-reload;
-    systemctl --user enable RMTagent.service'
+    systemctl --user enable rmt-agent.service'

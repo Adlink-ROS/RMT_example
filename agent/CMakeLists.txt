@@ -50,11 +50,11 @@ pkg_check_modules(YAMLCPP REQUIRED yaml-cpp>=0.5)
 
 include_directories(${CMAKE_SOURCE_DIR}/agent)
 include_directories(${YAMLCPP_INCLUDE_DIRS})
-add_executable(agent_example agent_example.cpp datainfo.cpp fileinfo.cpp)
+add_executable(rmt-agent agent_main.cpp datainfo.cpp fileinfo.cpp)
 
-target_link_libraries(agent_example PRIVATE rmt_agent ${NLIB} ${ROSLIB} ${YAMLCPP_LIBRARIES} ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
-target_include_directories(agent_example PRIVATE ${LIBNM_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
-target_compile_options(agent_example PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAGS_OTHER})
+target_link_libraries(rmt-agent PRIVATE rmt_agent ${NLIB} ${ROSLIB} ${YAMLCPP_LIBRARIES} ${LIBNM_LIBRARIES} ${GLIB_LIBRARIES})
+target_include_directories(rmt-agent PRIVATE ${LIBNM_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
+target_compile_options(rmt-agent PRIVATE ${LIBNM_CFLAGS_OTHER} ${GLIB_CFLAGS_OTHER})
 # copy multi_agents.py to 'build/agent/'
 add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
                   copy "${PROJECT_SOURCE_DIR}/multi_agents.py" "${PROJECT_BINARY_DIR}/multi_agents.py")
@@ -63,17 +63,24 @@ add_custom_target(agent_link_target ALL COMMAND ${CMAKE_COMMAND} -E
 add_custom_target(nb2_task_link_target ALL COMMAND ${CMAKE_COMMAND} -E 
 copy_directory "${PROJECT_SOURCE_DIR}/neuronbot2_tasks" "${PROJECT_BINARY_DIR}/neuronbot2_tasks")
 
+set(INSTALL_PATH "/opt/adlink/rmt/")
 install(
   FILES
-    ${CMAKE_BINARY_DIR}/agent_example
+    ${CMAKE_BINARY_DIR}/rmt-agent
   DESTINATION 
-    usr/bin
+    ${INSTALL_PATH}
 )
 install(
   FILES
-    ${CMAKE_SOURCE_DIR}/RMTagent.service
+    ${CMAKE_SOURCE_DIR}/rmt-agent.service
   DESTINATION 
-    usr/bin
+    ${INSTALL_PATH}
+)
+install(
+  DIRECTORY
+    ${CMAKE_SOURCE_DIR}/tasks
+  DESTINATION
+    ${INSTALL_PATH}
 )
 
 # Package
