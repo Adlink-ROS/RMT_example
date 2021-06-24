@@ -18,6 +18,7 @@
  #include "mraa/led.h"
 #endif /*SUPPORT_NLIB*/
 #include "yaml-cpp/yaml.h"
+#include <vector>
 
 char interface[50];
 #ifdef SUPPORT_ROS
@@ -466,14 +467,249 @@ int set_wifi(char *payload)
 {
     if (!payload) return -1;
 
-    char ssid[32];
-    char password[32];
+    char ssid[33];
+    char password[33];
     int result;
 
     sscanf(payload, "%s %s", ssid, password);
     result = modify_wifi(ssid, password);
 
     return result;
+}
+
+int update_ip4(const char* device_name, const char* method, const char* address, int prefix, const char* gateway)
+{
+    NMClient  *client;
+    NMDevice *device;
+    GMainLoop *loop;
+    GError    *error = NULL;
+    WifiModifyData *wifi_modify_data;
+    gboolean temporary = FALSE;
+    NMSettingIPConfig * s_ip4;
+    NMConnection *new_connection;
+    NMActiveConnection *active_con;
+    NMRemoteConnection *rem_con = NULL;
+    NMIPAddress *ip_address;
+
+    loop = g_main_loop_new(NULL, FALSE);
+    client = nm_client_new(NULL, &error);
+
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return -1;
+    }
+
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .loop = loop,
+    };
+
+    device = nm_client_get_device_by_iface(client, device_name);
+
+    if (!device) {
+        g_print("No such device found, device name error!\n");
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    active_con = nm_device_get_active_connection(device);
+
+    if (!active_con) {
+        printf("No current active connection on this device!\n");
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    rem_con = nm_active_connection_get_connection(active_con);
+    new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
+    s_ip4 = (NMSettingIPConfig *) nm_setting_ip4_config_new();
+
+    nm_connection_remove_setting(new_connection, NM_TYPE_SETTING_IP4_CONFIG);
+
+    if (!strcmp(method, "auto")) {
+        g_object_set(s_ip4,
+                     NM_SETTING_IP_CONFIG_METHOD,
+                     NM_SETTING_IP4_CONFIG_METHOD_AUTO,
+                     NULL);
+    } else if (!strcmp(method, "manual")) {
+        ip_address = nm_ip_address_new(AF_INET, address, prefix, NULL);
+
+        g_object_set(s_ip4,
+                     NM_SETTING_IP_CONFIG_METHOD,
+                     NM_SETTING_IP4_CONFIG_METHOD_MANUAL,
+                     NULL);
+
+        if (strlen(gateway)) {
+            g_object_set(s_ip4,
+                         NM_SETTING_IP_CONFIG_GATEWAY,
+                         gateway,
+                         NULL);
+        }
+
+        nm_setting_ip_config_add_address(s_ip4, ip_address);
+        nm_ip_address_unref(ip_address);
+    } else {
+        g_print("IP setting method not found\n");
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    nm_connection_add_setting(new_connection, NM_SETTING(s_ip4));
+
+    if (!nm_connection_verify(new_connection, NULL)) {
+        g_print("Error: invalid property of connection, abort action.\n");
+        g_object_unref(client);
+
+        return -1;
+    }
+
+    nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
+                                                    new_connection);
+    nm_remote_connection_commit_changes_async(rem_con,
+                                              !temporary,
+                                              NULL,
+                                              modify_connection_cb,
+                                              wifi_modify_data);
+    g_object_unref(new_connection);
+    g_main_loop_run(wifi_modify_data->loop);
+    g_object_unref(client);
+
+    return wifi_modify_data->result;
+}
+
+/*
+ * Set RMTClient connection ip address with "<device> <method> <address> <prefix> <gateway>(optional)"
+ * For setting to auto(DHCP), the method should be "auto", input except "device" and "method" is unnecessary.
+ * For setting to manual, the input would be like "wlp1s0 manual 192.168.50.26 24".
+ */
+int set_ip_address(char *payload)
+{
+    if (!payload) return -1;
+
+    char device[16], method[10], address[16];
+    char gateway[16] = "";
+    char *temp;
+    int prefix, result;
+    std::vector < char* > ip_setting;
+
+    temp = strtok(payload, " ");
+
+    while (temp) {
+        ip_setting.push_back(temp);
+        temp = strtok(NULL, " ");
+    }
+
+    if (ip_setting.size() < 2) return -1;
+
+    strcpy(device, ip_setting[0]);
+    strcpy(method, ip_setting[1]);
+
+    if (ip_setting.size() > 2) {
+        strcpy(address, ip_setting[2]);
+        prefix = atoi(ip_setting[3]);
+
+        if (ip_setting.size() > 4) strcpy(gateway, ip_setting[4]);
+    }
+
+    result = update_ip4(device, method, address, prefix, gateway);
+
+    return result;
+}
+
+const char* connection_ip_config(NMConnection* connection)
+{
+    NMSettingIPConfig * s_ip4;
+    NMIPAddress *ip_address;
+    const char *address, *gateway, *method;
+    char* ip_config;
+    int prefix;
+
+    s_ip4 = nm_connection_get_setting_ip4_config(connection);
+    method = nm_setting_ip_config_get_method(s_ip4);
+
+    if (!strcmp(method, "manual")) {
+        ip_address = nm_setting_ip_config_get_address(s_ip4, 0);
+        prefix = nm_ip_address_get_prefix(ip_address);
+        address = nm_ip_address_get_address(ip_address);
+        gateway = nm_setting_ip_config_get_gateway(s_ip4);
+
+        if (gateway) {
+            asprintf(&ip_config, "%s %s %d %s", method, address, prefix, gateway);
+        } else {
+            asprintf(&ip_config, "%s %s %d", method, address, prefix);
+        }
+    } else {
+        asprintf(&ip_config, "%s", method);
+    }
+
+    return ip_config;
+}
+
+/*
+ * Detect NM device which has active connection and return device name and ip configuration of connection.
+ * return value: "device_1 device_type_1 ip_config_1#device_2 ..."
+ */
+int get_ip_address(char *payload)
+{
+    NMDevice *device;
+    NMActiveConnection *active_con;
+    NMClient   *client;
+    GError     *error = NULL;
+    NMConnection *new_connection;
+    const GPtrArray *devices;
+    const char *device_name, *type, *ip_config;
+    char *temp;
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    client = nm_client_new(NULL, &error);
+
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return -1;
+    }
+
+    devices = nm_client_get_devices(client);
+
+    for (int i = 0; i < devices->len; i++) {
+        device = (NMDevice *)devices->pdata[i];
+        active_con = nm_device_get_active_connection(device);
+        device_name = nm_device_get_iface(device);
+
+        if (!active_con) continue;
+
+        new_connection = nm_simple_connection_new_clone(NM_CONNECTION(nm_active_connection_get_connection(active_con)));
+
+        switch (nm_device_get_device_type(device)) {
+            case NM_DEVICE_TYPE_ETHERNET:
+                type = "ethernet";
+                break;
+
+            case NM_DEVICE_TYPE_WIFI:
+                type = "wifi";
+                break;
+            default:
+                continue;
+        }
+
+        ip_config = connection_ip_config(new_connection);
+        asprintf(&temp, "%s %s %s", device_name, type, ip_config);
+
+        if (strlen(payload)) strcat(payload, "#");
+
+        strcat(payload, temp);
+    }
+
+    g_object_unref(client);
+
+exit:
+    return ret;
 }
 
 #define LED_NUM 0

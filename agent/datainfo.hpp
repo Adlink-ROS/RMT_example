@@ -19,6 +19,8 @@ int set_wifi(char *payload);
 int set_locate(char *payload);
 int get_domain_id(char *payload);
 int set_domain_id(char *payload);
+int get_ip_address(char *payload);
+int set_ip_address(char *payload);
 #ifdef SUPPORT_ROS
 int get_node_list(char *payload);
 #endif /*SUPPORT_ROS*/
