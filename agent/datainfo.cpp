@@ -150,6 +150,8 @@ typedef struct {
 } GetSecretsData;
 
 typedef struct {
+    NMClient  *client;
+    NMDevice  *device;
     GMainLoop *loop;
     int result;
 } WifiModifyData;
@@ -373,7 +375,87 @@ void add_wifi_connection(NMClient *client)
     g_object_unref(client);
 }
 
-void modify_connection_cb (GObject *connection, GAsyncResult *result, gpointer user_data)
+void activate_cb (GObject *client, GAsyncResult *result, gpointer user_data)
+{
+    WifiModifyData *data = (WifiModifyData*)user_data;
+    GError *error = NULL;
+
+    nm_client_activate_connection_finish(data->client, result, &error);
+    if (error) {
+        data->result = -1;
+        g_print("Error in activating connection: %s", error->message);
+        g_error_free(error);
+    } else {
+        data->result = 0;
+        g_print(("Connection successfully activated.\n"));
+    }
+
+    g_main_loop_quit(data->loop);
+}
+
+void modify_wifi_cb (GObject *connection, GAsyncResult *result, gpointer user_data)
+{
+    GError *error = NULL;
+    const GPtrArray *connections;
+    NMConnection *new_connection;
+    const char *name;
+    WifiModifyData *data = (WifiModifyData*)user_data;
+
+    if (!nm_remote_connection_commit_changes_finish (NM_REMOTE_CONNECTION (connection),
+                                                     result, &error)) {
+        g_print(("Error: Failed to modify connection '%s': %s\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                error->message);
+        data->result = -1;
+        g_error_free(error);
+        g_main_loop_quit(data->loop);
+    } else {
+        g_print(("Connection '%s' (%s) successfully modified.\n"),
+                nm_connection_get_id (NM_CONNECTION (connection)),
+                nm_connection_get_uuid (NM_CONNECTION (connection)));
+
+        connections = nm_device_get_available_connections(data->device);
+        bool find_connection = false;
+
+        for (int i = 0; i < connections->len; i++) {
+            new_connection = nm_simple_connection_new_clone(NM_CONNECTION(connections->pdata[i]));
+            name = nm_connection_get_id(new_connection);
+
+            if (!strcmp(name, "RMTClient")) {
+                nm_client_activate_connection_async(data->client, new_connection, data->device,
+                                                    NULL, NULL, activate_cb, data);
+                find_connection = true;
+                break;
+            }
+        }
+
+        if (!find_connection) {
+            data->result = 0;
+            g_main_loop_quit(data->loop);
+        }
+    }
+}
+
+void reapply_cb(GObject *device, GAsyncResult *result, gpointer user_data)
+{
+    GError *error = NULL;
+    WifiModifyData *data = (WifiModifyData*)user_data;
+
+    nm_device_reapply_finish(data->device, result, &error);
+
+    if (error) {
+        data->result = -1;
+        g_print("Error reapply connection: %s", error->message);
+        g_error_free(error);
+    } else {
+        data->result = 0;
+        g_print(("Connection configuration successfully reapplied.\n"));
+    }
+
+    g_main_loop_quit(data->loop);
+}
+
+void modify_address_cb (GObject *connection, GAsyncResult *result, gpointer user_data)
 {
     GError *error = NULL;
     WifiModifyData *data = (WifiModifyData*)user_data;
@@ -385,13 +467,13 @@ void modify_connection_cb (GObject *connection, GAsyncResult *result, gpointer u
                 error->message);
         g_error_free(error);
         data->result = -1;
+        g_main_loop_quit(data->loop);
     } else {
-        g_print(("Connection '%s' (%s) successfully modified.\n"),
+        g_print(("Connection '%s' (%s) successfully modified IPv4 address.\n"),
                 nm_connection_get_id (NM_CONNECTION (connection)),
                 nm_connection_get_uuid (NM_CONNECTION (connection)));
-        data->result = 0;
+        nm_device_reapply_async(data->device, NM_CONNECTION (connection), 0, 0, NULL, reapply_cb, data);
     }
-    g_main_loop_quit(data->loop);
 }
 
 int modify_wifi(const char * ssid, const char * password)
@@ -400,6 +482,13 @@ int modify_wifi(const char * ssid, const char * password)
     GMainLoop *loop;
     GError    *error = NULL;
     WifiModifyData *wifi_modify_data;
+    const GPtrArray *devices;
+    NMDevice *device;
+    NMRemoteConnection *rem_con = NULL;
+    NMConnection       *new_connection;
+    gboolean temporary = FALSE;
+    NMSettingWireless   *s_wireless;
+    NMSettingWirelessSecurity * s_secure;
 
     loop = g_main_loop_new(NULL, FALSE);
     client = nm_client_new(NULL, &error);
@@ -410,16 +499,19 @@ int modify_wifi(const char * ssid, const char * password)
         return -1;
     }
 
+    devices = nm_client_get_devices(client);
+
+    for (int i = 0; i < devices->len; i++) {
+        device = (NMDevice *)devices->pdata[i];
+        if (NM_IS_DEVICE_WIFI(device)) break;
+    }
+
     wifi_modify_data = g_slice_new(WifiModifyData);
     *wifi_modify_data = (WifiModifyData) {
+        .client = client,
+        .device = device,
         .loop = loop,
     };
-
-    NMRemoteConnection *rem_con = NULL;
-    NMConnection       *new_connection;
-    gboolean temporary = FALSE;
-    NMSettingWireless   *s_wireless;
-    NMSettingWirelessSecurity * s_secure;
 
     rem_con = nm_client_get_connection_by_id(client, "RMTClient");
     new_connection = nm_simple_connection_new_clone(NM_CONNECTION(rem_con));
@@ -451,11 +543,11 @@ int modify_wifi(const char * ssid, const char * password)
     nm_remote_connection_commit_changes_async(rem_con,
                                               !temporary,
                                               NULL,
-                                              modify_connection_cb,
+                                              modify_wifi_cb,
                                               wifi_modify_data);
     g_object_unref(new_connection);
     g_main_loop_run(wifi_modify_data->loop);
-    g_object_unref(client);
+    g_object_unref(wifi_modify_data->client);
 
     return wifi_modify_data->result;
 }
@@ -499,11 +591,6 @@ int update_ip4(const char* device_name, const char* method, const char* address,
         g_error_free(error);
         return -1;
     }
-
-    wifi_modify_data = g_slice_new(WifiModifyData);
-    *wifi_modify_data = (WifiModifyData) {
-        .loop = loop,
-    };
 
     device = nm_client_get_device_by_iface(client, device_name);
 
@@ -567,12 +654,18 @@ int update_ip4(const char* device_name, const char* method, const char* address,
         return -1;
     }
 
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .device = device,
+        .loop = loop,
+    };
+
     nm_connection_replace_settings_from_connection (NM_CONNECTION (rem_con),
                                                     new_connection);
     nm_remote_connection_commit_changes_async(rem_con,
                                               !temporary,
                                               NULL,
-                                              modify_connection_cb,
+                                              modify_address_cb,
                                               wifi_modify_data);
     g_object_unref(new_connection);
     g_main_loop_run(wifi_modify_data->loop);
