@@ -656,6 +656,7 @@ int update_ip4(const char* device_name, const char* method, const char* address,
 
     wifi_modify_data = g_slice_new(WifiModifyData);
     *wifi_modify_data = (WifiModifyData) {
+        .client = client,
         .device = device,
         .loop = loop,
     };
@@ -669,7 +670,7 @@ int update_ip4(const char* device_name, const char* method, const char* address,
                                               wifi_modify_data);
     g_object_unref(new_connection);
     g_main_loop_run(wifi_modify_data->loop);
-    g_object_unref(client);
+    g_object_unref(wifi_modify_data->client);
 
     return wifi_modify_data->result;
 }
