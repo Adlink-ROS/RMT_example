@@ -21,6 +21,7 @@ int get_domain_id(char *payload);
 int set_domain_id(char *payload);
 int get_ip_address(char *payload);
 int set_ip_address(char *payload);
+void ip_reapply_daemon(void);
 #ifdef SUPPORT_ROS
 int get_node_list(char *payload);
 #endif /*SUPPORT_ROS*/

@@ -21,6 +21,8 @@
 #include <vector>
 
 char interface[50];
+static bool reapply_required = false;
+static char current_device[16];
 #ifdef SUPPORT_ROS
 rclcpp::Node::SharedPtr node;
 #endif /*SUPPORT_ROS*/
@@ -472,7 +474,9 @@ void modify_address_cb (GObject *connection, GAsyncResult *result, gpointer user
         g_print(("Connection '%s' (%s) successfully modified IPv4 address.\n"),
                 nm_connection_get_id (NM_CONNECTION (connection)),
                 nm_connection_get_uuid (NM_CONNECTION (connection)));
-        nm_device_reapply_async(data->device, NM_CONNECTION (connection), 0, 0, NULL, reapply_cb, data);
+        reapply_required = true;
+        data->result = 0;
+        g_main_loop_quit(data->loop);
     }
 }
 
@@ -684,7 +688,7 @@ int set_ip_address(char *payload)
 {
     if (!payload) return -1;
 
-    char device[16], method[10], address[16];
+    char method[10], address[16];
     char gateway[16] = "";
     char *temp;
     int prefix, result;
@@ -699,7 +703,7 @@ int set_ip_address(char *payload)
 
     if (ip_setting.size() < 2) return -1;
 
-    strcpy(device, ip_setting[0]);
+    strcpy(current_device, ip_setting[0]);
     strcpy(method, ip_setting[1]);
 
     if (ip_setting.size() > 2) {
@@ -709,7 +713,7 @@ int set_ip_address(char *payload)
         if (ip_setting.size() > 4) strcpy(gateway, ip_setting[4]);
     }
 
-    result = update_ip4(device, method, address, prefix, gateway);
+    result = update_ip4(current_device, method, address, prefix, gateway);
 
     return result;
 }
@@ -804,6 +808,66 @@ int get_ip_address(char *payload)
 
 exit:
     return ret;
+}
+
+void ip_address_apply()
+{
+    NMClient  *client;
+    NMDevice *device;
+    GMainLoop *loop;
+    GError    *error = NULL;
+    WifiModifyData *wifi_modify_data;
+    NMActiveConnection *active_con;
+    NMRemoteConnection *rem_con = NULL;
+
+    loop = g_main_loop_new(NULL, FALSE);
+    client = nm_client_new(NULL, &error);
+
+    if (!client) {
+        g_message("Error: Could not connect to NetworkManager: %s.", error->message);
+        g_error_free(error);
+        return;
+    }
+
+    device = nm_client_get_device_by_iface(client, current_device);
+
+    if (!device) {
+        g_print("No such device found, device name error!\n");
+        g_object_unref(client);
+
+        return;
+    }
+
+    active_con = nm_device_get_active_connection(device);
+
+    if (!active_con) {
+        printf("No current active connection on this device!\n");
+        g_object_unref(client);
+
+        return;
+    }
+
+    rem_con = nm_active_connection_get_connection(active_con);
+
+    wifi_modify_data = g_slice_new(WifiModifyData);
+    *wifi_modify_data = (WifiModifyData) {
+        .client = client,
+        .device = device,
+        .loop = loop,
+    };
+
+    nm_device_reapply_async(wifi_modify_data->device, NM_CONNECTION (rem_con), 0, 0, NULL, reapply_cb, wifi_modify_data);
+
+    g_main_loop_run(wifi_modify_data->loop);
+    g_object_unref(wifi_modify_data->client);
+}
+
+void ip_reapply_daemon(void)
+{
+    if (reapply_required) {
+        ip_address_apply();
+        reapply_required = false;
+    }
 }
 
 #define LED_NUM 0

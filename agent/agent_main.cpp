@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
     while (1) {
 #endif /*SUPPORT_NLIB*/
         rmt_agent_running();
+        ip_reapply_daemon();
 #ifdef SUPPORT_NLIB
         locate_daemon();
 #endif /*SUPPORT_NLIB*/
