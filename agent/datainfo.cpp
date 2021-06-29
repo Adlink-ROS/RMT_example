@@ -469,15 +469,15 @@ void modify_address_cb (GObject *connection, GAsyncResult *result, gpointer user
                 error->message);
         g_error_free(error);
         data->result = -1;
-        g_main_loop_quit(data->loop);
     } else {
         g_print(("Connection '%s' (%s) successfully modified IPv4 address.\n"),
                 nm_connection_get_id (NM_CONNECTION (connection)),
                 nm_connection_get_uuid (NM_CONNECTION (connection)));
         reapply_required = true;
         data->result = 0;
-        g_main_loop_quit(data->loop);
     }
+
+    g_main_loop_quit(data->loop);
 }
 
 int modify_wifi(const char * ssid, const char * password)
