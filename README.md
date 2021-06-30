@@ -7,7 +7,7 @@ rmt-agent is also an example of how to use RMT library.
 # Install necessary packages
 
 ```bash
-sudo apt install libnm-dev libglib2.0-dev
+sudo apt install libnm-dev libglib2.0-dev makeself
 # If you want to use ROS, please also install ROS 2 foxy
 ```
 
@@ -24,9 +24,8 @@ cd ~/rmt-agent
 * Install necessary packages
 
 ```bash
-sudo apt install libnm-dev makeself
 # install Neuron Library & RMT Library
-cd ~/RMT_example/agent
+cd ~/rmt-agent/agent
 sudo apt install ./packages/*.deb
 ```
 
