@@ -1,13 +1,11 @@
 # Introduction
 
-rmt-agent can run on ROScube and be controlled by RMT library.
-
-rmt-agent is also an example of how to use RMT library.
+rmt-agent can run on ADLINK ROScube series and communicate to server with RMT library.
 
 # Install necessary packages
 
 ```bash
-sudo apt install libnm-dev libglib2.0-dev
+sudo apt install libnm-dev libglib2.0-dev makeself
 # If you want to use ROS, please also install ROS 2 foxy
 ```
 
@@ -24,9 +22,8 @@ cd ~/rmt-agent
 * Install necessary packages
 
 ```bash
-sudo apt install libnm-dev makeself
 # install Neuron Library & RMT Library
-cd ~/RMT_example/agent
+cd ~/rmt-agent/agent
 sudo apt install ./packages/*.deb
 ```
 
@@ -38,28 +35,46 @@ cmake -Bbuild -H.
 cmake --build build
 # If you want to build deb file, run the command and find deb file in build folder
 cmake --build build --target package
-# Create run file (including rmt_library, rmt_agent, mraa)
+# Create run file (including rmt_library, rmt_agent, Neuron Library)
 cmake --build build --target makeself
 ```
 
-* Run
+# Usage
+
+## Run directly
+
+We can run the rmt-agent directly after building.
 
 ```bash
 cd ~/rmt-agent/agent/build
 sudo ./rmt-agent --id <your_id>
 ```
 
-# Usage
+## Run with installation
 
-* After packaging, we can install with the following commands
+We can also install rmt-agent, and it'll run automatically after reboot.
+
+* Install rmt-library
 
 ```bash
-./build/rmt_agent_<version>_<arch>.run install
+cd ~/rmt-agent/agent/build
+./rmt_agent_<version>_<arch>.run install
 ```
 
-* Enable / Disable rmt-agent
+* Run / stop / show status of rmt-agent
 
 ```bash
-systemctl --user enable rmt-agent.service
-systemctl --user disable rmt-agent.service
+# Run rmt-agent
+systemctl --user start rmt-agent.service
+# Stop rmt-agent
+systemctl --user stop rmt-agent.service
+# Show the status
+systemctl --user status rmt-agent.service
+```
+
+* Uninstall rmt-library
+
+```bash
+cd ~/rmt-agent/agent/build
+./rmt_agent_<version>_<arch>.run uninstall
 ```
