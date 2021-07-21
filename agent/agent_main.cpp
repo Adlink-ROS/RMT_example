@@ -73,7 +73,7 @@ static datainfo_func datainfo_func_maps[] = {
     {"ram",        get_ram,        NULL           },
     {"hostname",   get_hostname,   set_hostname   },
     {"wifi",       get_wifi,       set_wifi       },
-    {"locate",     NULL,           set_locate     },
+    {"locate",     get_locate,     set_locate     },
     {"task_list",  get_task_list,  NULL           },
     {"task_mode",  get_task_mode,  set_task_mode  },
     {"ip_address", get_ip_address, set_ip_address },
