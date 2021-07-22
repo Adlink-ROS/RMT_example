@@ -891,6 +891,22 @@ int set_locate(char *payload)
     return 0;
 }
 
+int get_locate(char* payload)
+{
+    int ret = 0;
+
+    if (!payload) return -1;
+
+    if (locate_on) {
+        sprintf(payload, "%s", "on");
+    } else {
+        sprintf(payload, "%s", "off");
+    }
+
+exit:
+    return ret;
+}
+
 #ifdef SUPPORT_NLIB
 /*
  * status=0: dark
