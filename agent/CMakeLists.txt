@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # project name, version
-project(RMT_agent VERSION 0.9.6)
+project(RMT_agent VERSION 0.9.7)
 
 # Check Neuron Library exist or not (default is ON while Neuron Library exists)
 option(USE_NLIB "Build agent with Neuron Library" ON)
