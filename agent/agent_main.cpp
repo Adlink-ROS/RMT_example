@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     while (rclcpp::ok()) {
 #else
     while (1) {
-#endif /*SUPPORT_NLIB*/
+#endif /*SUPPORT_ROS*/
         rmt_agent_running();
         ip_reapply_daemon();
 #ifdef SUPPORT_NLIB
