@@ -23,13 +23,13 @@ cd ~/rmt-agent
 
 ```bash
 # install Neuron Library & RMT Library
-cd ~/rmt-agent/agent
 sudo apt install ./packages/*.deb
 ```
 
 * Build Agent
 
 ```bash
+cd ~/rmt-agent/agent
 # If you want to use ROS, run "cmake -Bbuild -H. -DUSE_ROS=ON" instead
 cmake -Bbuild -H.
 cmake --build build
