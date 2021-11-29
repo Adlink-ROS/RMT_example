@@ -117,17 +117,20 @@ int main(int argc, char *argv[])
 {
     int cmd_opt = 0;
     bool daemon = false;
+    bool opt_config = false;
 
     // Parse argument
     while ((cmd_opt = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (cmd_opt) {
             case 'i':
                 myid = atoi(optarg);
+                opt_config = true;
                 break;
             case 'n':
                 if (strlen(optarg) > 0) {
                     strcpy(interface, optarg);
                     my_interface = interface;
+                    opt_config = true;
                 }
                 break;
             case 'd':
@@ -163,6 +166,17 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     node = std::make_shared < rclcpp::Node > ("list_nodes");
 #endif /*SUPPORT_ROS*/
+    if (opt_config) {
+        /* Note that the priority of rmt_agent_cfg is higher than rmt.conf */
+        rmt_agent_cfg mycfg;
+        mycfg.net_interface = my_interface;
+        mycfg.device_id = myid;
+        // Wait for the agent configure sucessfully. This is necessary to systemd daemon to wait for available network.
+        while (rmt_agent_configure(&mycfg) != 0) {
+            printf("Waiting for rmt-agent to configure...\n");
+            sleep(1);
+        }
+    }
     while (rmt_agent_init(agent_devinfo_func, datainfo_func_maps, fileinfo_func_maps) != 0) {
         printf("Waiting for communication to initialize...\n");
         sleep(1);
