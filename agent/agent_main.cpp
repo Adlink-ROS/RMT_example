@@ -163,17 +163,6 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     node = std::make_shared < rclcpp::Node > ("list_nodes");
 #endif /*SUPPORT_ROS*/
-    rmt_agent_cfg mycfg;
-    mycfg.net_interface = my_interface;
-    mycfg.device_id = myid;
-    mycfg.datainfo_val_size = 256;
-    mycfg.domain_id = 0;
-    mycfg.devinfo_size = 1024;
-    // Wait for the agent configure sucessfully. This is necessary to systemd daemon to wait for available network.
-    while (rmt_agent_configure(&mycfg) != 0) {
-        printf("Waiting for rmt-agent to configure...\n");
-        sleep(1);
-    }
     while (rmt_agent_init(agent_devinfo_func, datainfo_func_maps, fileinfo_func_maps) != 0) {
         printf("Waiting for communication to initialize...\n");
         sleep(1);
