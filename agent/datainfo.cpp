@@ -1019,6 +1019,7 @@ exit:
 
 #endif /*SUPPORT_ROS*/
 
+// RMT_TODO: able to find tasks folder under the current folder.
 static const char *RMT_TASK_DIR = "/opt/adlink/rmt/tasks/";
 int get_task_list(char *payload)
 {
