@@ -1,7 +1,4 @@
-#!/bin/bash -m
-set +m 
-# In this way (set +m), the background processes will share the same group ID.
-# So, kill this script process will also kill the child processes.
+#!/bin/bash
 
 trap 'exit' INT TERM ERR
 trap 'kill -TERM 0' EXIT

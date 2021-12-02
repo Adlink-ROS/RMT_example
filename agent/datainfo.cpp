@@ -1122,6 +1122,9 @@ static int run_task_script(char *filename)
         // run external task program
         char fullpath[128];
         snprintf(fullpath, sizeof(fullpath), "%s/%s", RMT_TASK_DIR, filename);
+        // We need to make sure the child process run in different PGID (Here we use the same ID as child process PID).
+        // Therefore we can kill all the child processes by sending signal to the PGID
+        setpgid(getpid(), getpid());
         if (execl(fullpath, filename, (char *) NULL) < 0) {
             // error to run, enable stdout/stderror to show error reason
 #ifdef DISABLE_OUTPUT_MSG
