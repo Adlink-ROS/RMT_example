@@ -73,6 +73,12 @@ install(
     ${INSTALL_PATH}
 )
 install(
+  FILES
+    ${CMAKE_SOURCE_DIR}/rmt.conf
+  DESTINATION
+    ${INSTALL_PATH}
+)
+install(
   DIRECTORY
     ${CMAKE_SOURCE_DIR}/tasks
   DESTINATION
